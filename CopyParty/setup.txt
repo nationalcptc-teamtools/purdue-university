@@ -1,0 +1,15 @@
+Set up this folder structure
+
+/home/YOUR_USERNAME/docker/copyparty/conf/
+/home/YOUR_USERNAME/media/
+
+
+Location
+
+/home/YOUR_USERNAME/git/homeservarr/copyparty/copyparty.conf
+
+
+Run
+
+cd /home/YOUR_USERNAME/git/homeservarr/copyparty/
+docker compose up -d
