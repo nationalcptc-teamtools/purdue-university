@@ -1,0 +1,25 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Virtual Private Server{% endblock %}
+
+{% block content %}
+    <p>Enter the details for this VPS and how it will be used for the project.</p>
+
+    <!-- Form Error Section -->
+    {% if form.errors %}
+        <script>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+            {% endfor %}
+        </script>
+    {% endif %}
+
+    <!-- Form Section -->
+    {% crispy form form.helper %}
+{% endblock %}

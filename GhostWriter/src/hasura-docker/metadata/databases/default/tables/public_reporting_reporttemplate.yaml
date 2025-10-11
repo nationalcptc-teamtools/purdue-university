@@ -1,0 +1,104 @@
+table:
+  name: reporting_reporttemplate
+  schema: public
+configuration:
+  column_config:
+    client_id:
+      custom_name: clientId
+    doc_type_id:
+      custom_name: docTypeId
+    last_update:
+      custom_name: lastUpdate
+    lint_result:
+      custom_name: lintResult
+    upload_date:
+      custom_name: uploadDate
+    uploaded_by_id:
+      custom_name: uploadedById
+  custom_column_names:
+    client_id: clientId
+    doc_type_id: docTypeId
+    last_update: lastUpdate
+    lint_result: lintResult
+    upload_date: uploadDate
+    uploaded_by_id: uploadedById
+  custom_name: template
+  custom_root_fields: {}
+object_relationships:
+  - name: client
+    using:
+      foreign_key_constraint_on: client_id
+  - name: reporting_doctype
+    using:
+      foreign_key_constraint_on: doc_type_id
+  - name: user
+    using:
+      foreign_key_constraint_on: uploaded_by_id
+array_relationships:
+  - name: commandcenterReportconfigurationsByDefaultPptxTemplateId
+    using:
+      foreign_key_constraint_on:
+        column: default_pptx_template_id
+        table:
+          name: commandcenter_reportconfiguration
+          schema: public
+  - name: commandcenter_reportconfigurations
+    using:
+      foreign_key_constraint_on:
+        column: default_docx_template_id
+        table:
+          name: commandcenter_reportconfiguration
+          schema: public
+  - name: docxTemplates
+    using:
+      foreign_key_constraint_on:
+        column: docx_template_id
+        table:
+          name: reporting_report
+          schema: public
+  - name: pptxTemplates
+    using:
+      foreign_key_constraint_on:
+        column: pptx_template_id
+        table:
+          name: reporting_report
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - changelog
+        - client_id
+        - description
+        - doc_type_id
+        - document
+        - id
+        - landscape
+        - last_update
+        - lint_result
+        - name
+        - protected
+        - upload_date
+        - uploaded_by_id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        _or:
+          - client_id:
+              _is_null: true
+          - client:
+              invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+          - client:
+              projects:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+          - client:
+              projects:
+                assignments:
+                  operator_id:
+                    _eq: X-Hasura-User-Id

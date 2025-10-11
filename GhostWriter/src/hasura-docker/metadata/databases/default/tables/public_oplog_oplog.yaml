@@ -1,0 +1,133 @@
+table:
+  name: oplog_oplog
+  schema: public
+configuration:
+  column_config:
+    project_id:
+      custom_name: projectId
+  custom_column_names:
+    project_id: projectId
+  custom_name: oplog
+  custom_root_fields: {}
+object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+array_relationships:
+  - name: entries
+    using:
+      foreign_key_constraint_on:
+        column: oplog_id_id
+        table:
+          name: oplog_oplogentry
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - mute_notifications
+        - name
+        - project_id
+  - role: user
+    permission:
+      check:
+        project:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      columns:
+        - name
+        - project_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - mute_notifications
+        - name
+        - project_id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        project:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - mute_notifications
+        - name
+        - project_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - name
+        - project_id
+      filter:
+        project:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      check:
+        project:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter:
+        project:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id

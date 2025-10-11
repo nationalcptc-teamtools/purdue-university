@@ -1,0 +1,15 @@
+table:
+  name: home_userprofile
+  schema: public
+configuration:
+  column_config:
+    user_id:
+      custom_name: userId
+  custom_column_names:
+    user_id: userId
+  custom_name: userProfile
+  custom_root_fields: {}
+object_relationships:
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id

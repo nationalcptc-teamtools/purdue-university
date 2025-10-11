@@ -1,0 +1,138 @@
+{% load bleach_tags %}
+
+{% comment %} Contacts Section {% endcomment %}
+<h4>Project Points of Contacts</h4>
+<hr/>
+
+<a class="icon edit-icon btn btn-primary mb-3 col-3"
+   href="{% url 'rolodex:project_component_update' project.id %}#contacts">Add & Edit Contacts</a>
+
+<p class="text-justify offset-2 col-8">These are points of contact for this project. You can create project-specific contacts here or add contacts from the
+  client. If a point of contact might be part of more projects, consider adding them to the client for future use.
+</p>
+
+{% if project.projectcontact_set.all %}
+  <table id="contactTable" class="tablesorter table">
+    <thead>
+    <th class="align-middle pr-4 text-left">Primary</th>
+    <th class="align-middle pr-4 text-left">Name</th>
+    <th class="align-middle pr-4 text-left">Title/Role</th>
+    <th class="sorter-false align-middle pr-4 text-left">Email</th>
+    <th class="sorter-false align-middle text-left">Phone</th>
+    <th class="sorter-false align-middle">Note</th>
+    </thead>
+    {% for contact in project.projectcontact_set.all %}
+      <tr>
+        <td class="align-middle text-left">{% if contact.primary %}<i class="fas fa-check healthy"></i>{% endif %}</td>
+        <td class="align-middle text-left">{{ contact.name }}</td>
+        <td class="align-middle text-left">{% if contact.job_title %}{{ contact.job_title }}{% else %}--{% endif %}</td>
+        <td class="align-middle text-left">{% if contact.email %}{{ contact.email }}{% else %}--{% endif %}</td>
+        <td class="align-middle text-left">
+          {% if contact.phone %}
+            {{ contact.phone }}
+          {% else %}
+            --
+          {% endif %}
+        </td>
+        <td>
+          <button
+            class="expandme btn btn-transparent"
+            onclick="showHideRow($(this), 'hidden-contact-data-{{ contact.id }}');"
+            title="Expand to view additional information"
+          ></button>
+        </td>
+      </tr>
+      <tr class="hidden-row">
+        <td colspan=5>
+          <div id="hidden-contact-data-{{ contact.id }}" class="hidden-div">
+            {% if contact.note %}
+              {{ contact.note|bleach }}
+            {% else %}
+              <p>There are no notes for this contact.</p>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  <div class="alert alert-warning offset-md-2 col-md-8 mt-1" role="alert">There are no points of contacts assigned to
+    this client yet.
+  </div>
+{% endif %}
+
+<hr/>
+
+<p>Add points of contact from {{ project.client }}:</p>
+
+<div>
+  <form id="assign-project-contact-form" action="{% url 'rolodex:ajax_assign_project_contact' project.id %}"
+        method="POST">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <div class="form-row">
+      <div class="col col-6 offset-3">
+        <select id="id_client_contact" class="form-select custom-select" aria-label="Assign project contact">
+          {% if client_contacts %}
+            <option value="-1" selected>-- Choose a Client Contact --</option>
+            {% for contact in client_contacts %}
+              <option value="{{ contact.id }}"> {{ contact.name }} </option>
+            {% endfor %}
+          {% else %}
+            <option value="-1" selected>-- No Other Contacts Available --</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row mt-3">
+      <div class="col col-4 offset-4">
+        <button id="assign-btn" type="submit" class="btn btn-primary col-4" disabled="disabled">Assign</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  {% comment %} Create a new project point of contact from a client contact {% endcomment %}
+  $(document).ready(function () {
+    $('#id_client_contact').change(function () {
+      let option = $(this).val();
+      if (option === -1) {
+        $('#assign-btn').prop('disabled', true);
+      } else {
+        $('#assign-btn').prop('disabled', false);
+      }
+    });
+    $('#assign-project-contact-form').submit(function (e) {
+      e.preventDefault();
+      let url = $(this).attr('action');
+      let $contact = $('#id_client_contact')
+      let contactId = $contact.val();
+      let csrftoken = $('input[name=csrfmiddlewaretoken]').val();
+      if ($contact.val() === '') {
+        contactId = -1
+      }
+      $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader('X-CSRFToken', csrftoken);
+          }
+        }
+      });
+      $.ajax({
+        url: url,
+        type: 'POST',
+        dataType: 'json',
+        data: {
+          'contact': contactId,
+          'csrfmiddlewaretoken': csrftoken,
+        },
+        success: function (data) {
+          if (data['message']) {
+            displayToastTop({type: data['result'], string: data['message'], title: 'Contacts Update'});
+          }
+          update_project_contacts();
+        },
+      });
+    });
+  });
+</script>

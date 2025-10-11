@@ -1,0 +1,119 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+{% load bleach_tags %}
+
+{% block pagetitle %}Operation Logs{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb">
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Operation Logs</li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% comment %} Conditional display of API key for newly created oplogs {% endcomment %}
+    {% for message in messages %}
+        {% if "api-key" in message.tags %}
+            <div class="alert alert-success" role="alert">
+                <h4 style="margin-top: 0;" class="alert-heading">Hey You!</h4>
+                {{ message|linebreaks }}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <!-- Oplog Table Section -->
+    <div class="buttonHolder">
+      <a class="btn btn-primary icon add-icon col-2" href="{% url 'oplog:oplog_create_no_project' %}">Create Log</a>
+      <a class="btn btn-info icon upload-icon col-2" href="{% url 'oplog:oplog_import' %}">Import Log</a>
+      <a id="resetSortBtn" class="btn btn-secondary col-2 icon sync-icon" role="button">Reset Sort</a>
+    </div>
+    {% if oplog_list %}
+        <table id="oplogTable" class="tablesorter table table-hover table-striped table-sm">
+            <thead>
+                <tr>
+                    <th class="align-middle">ID</th>
+                    <th class="align-middle text-left">Name</th>
+                    <th class="align-middle text-left">Project</th>
+                    <th class="align-middle text-left sorter-false">
+                        <div class="dropdown dropleft">
+                            <span id="notification-info-btn" class="dropdown-info mr-2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Notifications</span>
+                                <div id="notification-info" class="dropdown-menu dropdown-info-content" aria-labelledby="notification-info-btn">
+                                <p>Notification status determines if Ghostwriter will send notifications for the log when the "Review Active Logs" task is run.</p>
+                            </div>
+                        </div>
+                    </th>
+                    <th class="sorter-false align-middle text-left">Export</th>
+                </tr>
+            </thead>
+            {% for log in oplog_list %}
+                <tr>
+                    <td class="align-middle">{{ log.id }}</td>
+                    <td class="align-middle text-left"><a class="clickable" href="{% url 'oplog:oplog_entries' log.pk %}">{{ log.name }}</a></td>
+                    <td class="align-middle text-left">{{ log.project.client.short_name }} {{ log.project.project_type }} ({{ log.project.start_date }})</td>
+                    <td class="align-middle pr-3 text-left">
+                        {% if log.mute_notifications %}
+                            <span class="icon silenced-notification-icon">Silenced</span>
+                        {% else %}
+                            <span class="icon notification-bell-icon">Active</span>
+                        {% endif %}
+                    </td>
+                    <td class="align-middle js-export-oplog" oplog-id="{{ log.pk }}" oplog-name="{{ log.name }}" export_url="{% url 'oplog:oplog_export' log.id %}"><a href="javascript:void(0);" class="icon export-icon"></a></td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p class="mt-3">There are no logs to see here yet. Start or import a log up above.</p>
+    {% endif %}
+{% endblock %}
+
+{% block morescripts %}
+    <!-- jQuery Tablesorter Script -->
+    <script>
+        $(document).ready(function () {
+            $("#oplogTable").tablesorter(
+                {
+                    cssAsc: ' down', cssDesc: 'up', cssNone: 'none',
+                    widgets: ['saveSort'],
+                    widgetOptions: {
+                      saveSort: true,
+                      storage_page: 'oplogLibraryTable'
+                    }
+                });
+
+            $('.tablesorter').trigger('update');
+
+            $('#resetSortBtn').click(function() {
+              $('#oplogTable')
+                .trigger('saveSortReset')
+                .trigger('sortReset');
+              return false;
+            });
+        });
+    </script>
+
+    <!-- Export Oplog with JS -->
+    <script>
+        function download(url, filename) {
+            fetch(url).then(function (t) {
+                return t.blob().then((b) => {
+                    var a = document.createElement("a");
+                    a.href = URL.createObjectURL(b);
+                    a.setAttribute("download", filename);
+                    a.click();
+                });
+            });
+        }
+
+        $(".js-export-oplog").on("click", function () {
+            id = $(this).attr('oplog-id')
+            name = $(this).attr('oplog-name')
+            export_url = $(this).attr('export_url')
+            base_name = `${name}-log-export-${id}.csv`
+            filename = generateDownloadName(base_name);
+            download(export_url, filename);
+        });
+    </script>
+{% endblock %}

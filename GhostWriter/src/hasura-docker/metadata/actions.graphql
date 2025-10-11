@@ -1,0 +1,256 @@
+type Mutation {
+  attachFinding(
+    findingId: Int!
+    reportId: Int!
+  ): attachFindingResponse
+}
+
+type Mutation {
+  checkoutDomain(
+    domainId: Int!
+    projectId: Int!
+    startDate: date!
+    endDate: date!
+    activityTypeId: Int!
+    note: String
+  ): checkoutResponse
+}
+
+type Mutation {
+  checkoutServer(
+    serverId: Int!
+    projectId: Int!
+    startDate: date!
+    endDate: date!
+    activityTypeId: Int!
+    serverRoleId: Int!
+    note: String
+  ): checkoutResponse
+}
+
+type Mutation {
+  createUser(
+    name: String!
+    email: String!
+    username: String!
+    password: String!
+    role: String!
+    timezone: String
+    phone: String
+    enableFindingCreate: Boolean
+    enableFindingEdit: Boolean
+    enableFindingDelete: Boolean
+    enableObservationCreate: Boolean
+    enableObservationEdit: Boolean
+    enableObservationDelete: Boolean
+    require2fa: Boolean
+  ): createUserResponse
+}
+
+type Mutation {
+  deleteDomainCheckout(
+    checkoutId: Int!
+  ): checkoutResponse
+}
+
+type Mutation {
+  deleteServerCheckout(
+    checkoutId: Int!
+  ): checkoutResponse
+}
+
+type Mutation {
+  deleteTemplate(
+    templateId: Int!
+  ): deleteResponse
+}
+
+type Query {
+  finding_by_tag(
+    tag: String!
+  ): [GetFindingByTagsResponse!]
+}
+
+type Mutation {
+  generateCodename: codenameResponse
+}
+
+type Mutation {
+  generateReport(
+    id: Int!
+  ): ReportResponse
+}
+
+type Query {
+  getExtraFieldSpec(
+    model: String!
+  ): ExtraFieldSpecOutput
+}
+
+type Mutation {
+  login(
+    username: String!
+    password: String!
+  ): LoginResponse
+}
+
+type Query {
+  observation_by_tag(
+    tag: String!
+  ): [GetObservationByTagsResponse!]
+}
+
+type Query {
+  oplogEntry_by_tag(
+    tag: String!
+  ): [GetOplogEntryByTagsResponse!]
+}
+
+type Query {
+  reportedFinding_by_tag(
+    tag: String!
+  ): [GetReportFindingByTagsResponse!]
+}
+
+type Query {
+  reportedObservation_by_tag(
+    tag: String!
+  ): [GetReportObservationByTagsResponse!]
+}
+
+type Mutation {
+  setTags(
+    model: String!
+    id: bigint!
+    tags: [String!]!
+  ): TagsResult!
+}
+
+type Query {
+  tags(
+    model: String!
+    id: bigint!
+  ): TagsResult!
+}
+
+type Mutation {
+  uploadEvidence(
+    file_base64: String!
+    filename: String!
+    friendly_name: String!
+    caption: String!
+    description: String
+    tags: String
+    report: Int
+    finding: Int
+  ): UploadEvidenceResult!
+}
+
+type Mutation {
+  uploadReportTemplate(
+    file_base64: String!
+    filename: String!
+    name: String!
+    description: String!
+    protected: Boolean
+    changelog: String
+    landscape: Boolean
+    filename_override: String
+    tags: String
+    client: Int
+    doc_type: Int!
+    p_style: String
+  ): UploadReportTemplateResult!
+}
+
+type Query {
+  whoami: WhoamiOutput
+}
+
+type LoginResponse {
+  token: String!
+  expires: date
+}
+
+type WhoamiOutput {
+  username: String!
+  role: String!
+  expires: date
+}
+
+type ReportResponse {
+  reportData: String!
+  docxUrl: String!
+  xlsxUrl: String!
+  pptxUrl: String!
+}
+
+type checkoutResponse {
+  result: String!
+}
+
+type deleteResponse {
+  result: String!
+}
+
+type attachFindingResponse {
+  id: Int!
+}
+
+type codenameResponse {
+  codename: String!
+}
+
+type ExtraFieldSpecOutput {
+  extraFieldSpec: String!
+}
+
+type UploadEvidenceResult {
+  id: Int!
+}
+
+type UploadReportTemplateResult {
+  id: Int!
+}
+
+type TagsResult {
+  tags: [String!]!
+}
+
+type createUserResponse {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  role: String!
+  result: String!
+}
+
+type GetByTagsResponse {
+  id: Int!
+}
+
+type GetByTagsObject {
+  id: Int!
+}
+
+type GetFindingByTagsResponse {
+  id: Int!
+}
+
+type GetObservationByTagsResponse {
+  id: Int!
+}
+
+type GetReportObservationByTagsResponse {
+  id: Int!
+}
+
+type GetReportFindingByTagsResponse {
+  id: Int!
+}
+
+type GetOplogEntryByTagsResponse {
+  id: Int!
+}
+

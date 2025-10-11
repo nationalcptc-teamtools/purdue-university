@@ -1,0 +1,22 @@
+{% load bleach_tags extra_fields %}
+
+{% with field_value=extra_fields|get_extra_field:field_spec %}
+  {% if field_spec.type == "checkbox" %}
+    {% if field_value %}
+      <span class="align-middle healthy"><i class="fas fa-check"></i></span>
+    {% else %}
+      <span class="align-middle burned"><i class="fas fa-times"></i></span>
+    {% endif %}
+  {% elif field_spec.type == "rich_text" %}
+    <div class="rich-text-field-preview">{{ field_value|bleach }}</div>
+  {% elif field_spec.type == "json" %}
+    <pre><code id="jsonPreview"></code></pre>
+    <script>
+        $('#jsonPreview').jsonView({
+          '{{ field_spec.display_name }}': {{ field_value|json_pretty|safe }}
+        })
+    </script>
+  {% else %}
+    {%  if field_value is None %}No Value Set{% else %}{{ field_value }}{% endif %}
+  {% endif %}
+{% endwith %}

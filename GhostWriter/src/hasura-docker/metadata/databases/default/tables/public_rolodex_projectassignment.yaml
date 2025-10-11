@@ -1,0 +1,95 @@
+table:
+  name: rolodex_projectassignment
+  schema: public
+configuration:
+  column_config:
+    end_date:
+      custom_name: endDate
+    operator_id:
+      custom_name: operatorId
+    project_id:
+      custom_name: projectId
+    role_id:
+      custom_name: roleId
+    start_date:
+      custom_name: startDate
+  custom_column_names:
+    end_date: endDate
+    operator_id: operatorId
+    project_id: projectId
+    role_id: roleId
+    start_date: startDate
+  custom_name: projectAssignment
+  custom_root_fields: {}
+object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+  - name: projectRole
+    using:
+      foreign_key_constraint_on: role_id
+  - name: user
+    using:
+      foreign_key_constraint_on: operator_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - end_date
+        - note
+        - operator_id
+        - project_id
+        - role_id
+        - start_date
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - operator_id
+        - project_id
+        - role_id
+        - end_date
+        - start_date
+        - note
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - end_date
+        - id
+        - note
+        - operator_id
+        - project_id
+        - role_id
+        - start_date
+      filter:
+        project:
+          _or:
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - end_date
+        - note
+        - operator_id
+        - project_id
+        - role_id
+        - start_date
+      filter: {}
+      check: {}
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}

@@ -1,0 +1,184 @@
+table:
+  name: reporting_finding
+  schema: public
+configuration:
+  column_config:
+    cvss_score:
+      custom_name: cvssScore
+    cvss_vector:
+      custom_name: cvssVector
+    extra_fields:
+      custom_name: extraFields
+    finding_guidance:
+      custom_name: findingGuidance
+    finding_type_id:
+      custom_name: findingTypeId
+    host_detection_techniques:
+      custom_name: hostDetectionTechniques
+    network_detection_techniques:
+      custom_name: networkDetectionTechniques
+    severity_id:
+      custom_name: severityId
+  custom_column_names:
+    cvss_score: cvssScore
+    cvss_vector: cvssVector
+    extra_fields: extraFields
+    finding_guidance: findingGuidance
+    finding_type_id: findingTypeId
+    host_detection_techniques: hostDetectionTechniques
+    network_detection_techniques: networkDetectionTechniques
+    severity_id: severityId
+  custom_name: finding
+  custom_root_fields: {}
+object_relationships:
+  - name: severity
+    using:
+      foreign_key_constraint_on: severity_id
+  - name: type
+    using:
+      foreign_key_constraint_on: finding_type_id
+array_relationships:
+  - name: comments
+    using:
+      foreign_key_constraint_on:
+        column: finding_id
+        table:
+          name: reporting_findingnote
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - cvss_score
+        - cvss_vector
+        - description
+        - extra_fields
+        - finding_guidance
+        - finding_type_id
+        - host_detection_techniques
+        - impact
+        - mitigation
+        - network_detection_techniques
+        - references
+        - replication_steps
+        - severity_id
+        - title
+  - role: user
+    permission:
+      check:
+        _exists:
+          _table:
+            name: users_user
+            schema: public
+          _where:
+            _and:
+              - id:
+                  _eq: X-Hasura-User-Id
+              - enable_finding_create:
+                  _eq: true
+      columns:
+        - cvss_score
+        - cvss_vector
+        - description
+        - extra_fields
+        - finding_guidance
+        - finding_type_id
+        - host_detection_techniques
+        - impact
+        - mitigation
+        - network_detection_techniques
+        - references
+        - replication_steps
+        - severity_id
+        - title
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - cvss_score
+        - cvss_vector
+        - description
+        - extra_fields
+        - finding_guidance
+        - finding_type_id
+        - host_detection_techniques
+        - id
+        - impact
+        - mitigation
+        - network_detection_techniques
+        - references
+        - replication_steps
+        - severity_id
+        - title
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - cvss_score
+        - cvss_vector
+        - description
+        - extra_fields
+        - finding_guidance
+        - finding_type_id
+        - host_detection_techniques
+        - impact
+        - mitigation
+        - network_detection_techniques
+        - references
+        - replication_steps
+        - severity_id
+        - title
+      filter: {}
+      check: null
+  - role: user
+    permission:
+      columns:
+        - cvss_score
+        - cvss_vector
+        - description
+        - extra_fields
+        - finding_guidance
+        - finding_type_id
+        - host_detection_techniques
+        - impact
+        - mitigation
+        - network_detection_techniques
+        - references
+        - replication_steps
+        - severity_id
+        - title
+      filter: {}
+      check:
+        _exists:
+          _table:
+            name: users_user
+            schema: public
+          _where:
+            _and:
+              - id:
+                  _eq: X-Hasura-User-Id
+              - enable_finding_edit:
+                  _eq: true
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter:
+        _exists:
+          _table:
+            name: users_user
+            schema: public
+          _where:
+            _and:
+              - id:
+                  _eq: X-Hasura-User-Id
+              - enable_finding_delete:
+                  _eq: true

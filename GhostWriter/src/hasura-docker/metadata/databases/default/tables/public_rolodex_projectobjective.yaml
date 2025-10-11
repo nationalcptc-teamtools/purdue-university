@@ -1,0 +1,199 @@
+table:
+  name: rolodex_projectobjective
+  schema: public
+configuration:
+  column_config:
+    marked_complete:
+      custom_name: markedComplete
+    priority_id:
+      custom_name: priorityId
+    project_id:
+      custom_name: projectId
+    status_id:
+      custom_name: statusId
+  custom_column_names:
+    marked_complete: markedComplete
+    priority_id: priorityId
+    project_id: projectId
+    status_id: statusId
+  custom_name: objective
+  custom_root_fields: {}
+object_relationships:
+  - name: objectivePriority
+    using:
+      foreign_key_constraint_on: priority_id
+  - name: objectiveStatus
+    using:
+      foreign_key_constraint_on: status_id
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+array_relationships:
+  - name: objectiveSubTasks
+    using:
+      foreign_key_constraint_on:
+        column: parent_id
+        table:
+          name: rolodex_projectsubtask
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - complete
+        - deadline
+        - description
+        - objective
+        - position
+        - priority_id
+        - project_id
+        - result
+        - status_id
+  - role: user
+    permission:
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      columns:
+        - complete
+        - deadline
+        - description
+        - objective
+        - position
+        - priority_id
+        - project_id
+        - result
+        - status_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - complete
+        - deadline
+        - description
+        - id
+        - marked_complete
+        - objective
+        - position
+        - priority_id
+        - project_id
+        - result
+        - status_id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - complete
+        - deadline
+        - description
+        - objective
+        - position
+        - priority_id
+        - project_id
+        - result
+        - status_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - complete
+        - deadline
+        - description
+        - objective
+        - position
+        - priority_id
+        - project_id
+        - result
+        - status_id
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+event_triggers:
+  - name: UpdateProjectObjective
+    definition:
+      enable_manual: false
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - deadline
+          - complete
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook: '{{ACTIONS_URL_BASE}}/event/projetobjective/update'
+    headers:
+      - name: Hasura-Action-Secret
+        value_from_env: HASURA_ACTION_SECRET

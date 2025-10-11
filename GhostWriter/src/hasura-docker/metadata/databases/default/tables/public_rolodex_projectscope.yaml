@@ -1,0 +1,145 @@
+table:
+  name: rolodex_projectscope
+  schema: public
+configuration:
+  column_config:
+    project_id:
+      custom_name: projectId
+    requires_caution:
+      custom_name: requiresCaution
+  custom_column_names:
+    project_id: projectId
+    requires_caution: requiresCaution
+  custom_name: scope
+  custom_root_fields: {}
+object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - description
+        - disallowed
+        - name
+        - project_id
+        - requires_caution
+        - scope
+  - role: user
+    permission:
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      columns:
+        - description
+        - disallowed
+        - name
+        - project_id
+        - requires_caution
+        - scope
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - project_id
+        - disallowed
+        - requires_caution
+        - name
+        - description
+        - scope
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - description
+        - disallowed
+        - name
+        - project_id
+        - requires_caution
+        - scope
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - description
+        - disallowed
+        - name
+        - project_id
+        - requires_caution
+        - scope
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id

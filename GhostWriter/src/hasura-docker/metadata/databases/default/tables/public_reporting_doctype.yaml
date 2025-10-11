@@ -1,0 +1,30 @@
+table:
+  name: reporting_doctype
+  schema: public
+configuration:
+  column_config:
+    doc_type:
+      custom_name: docType
+  custom_column_names:
+    doc_type: docType
+  custom_name: docType
+  custom_root_fields: {}
+array_relationships:
+  - name: templates
+    using:
+      foreign_key_constraint_on:
+        column: doc_type_id
+        table:
+          name: reporting_reporttemplate
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - doc_type
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}

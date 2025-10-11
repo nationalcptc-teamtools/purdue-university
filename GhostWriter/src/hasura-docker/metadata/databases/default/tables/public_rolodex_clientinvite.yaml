@@ -1,0 +1,73 @@
+table:
+  name: rolodex_clientinvite
+  schema: public
+configuration:
+  column_config:
+    client_id:
+      custom_name: clientId
+    user_id:
+      custom_name: userId
+  custom_column_names:
+    client_id: clientId
+    user_id: userId
+  custom_name: clientInvite
+  custom_root_fields: {}
+object_relationships:
+  - name: client
+    using:
+      foreign_key_constraint_on: client_id
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id
+array_relationships:
+  - name: projects
+    using:
+      manual_configuration:
+        column_mapping:
+          client_id: client_id
+        insertion_order: null
+        remote_table:
+          name: rolodex_project
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - client_id
+        - comment
+        - user_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - client_id
+        - comment
+        - id
+        - user_id
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - client_id
+        - id
+        - user_id
+        - comment
+      filter:
+        client:
+          invites:
+            user_id:
+              _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - client_id
+        - comment
+        - user_id
+      filter: {}
+      check: {}
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}

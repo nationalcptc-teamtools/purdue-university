@@ -1,0 +1,37 @@
+table:
+  name: reporting_findingtype
+  schema: public
+configuration:
+  column_config:
+    finding_type:
+      custom_name: findingType
+  custom_column_names:
+    finding_type: findingType
+  custom_name: findingType
+  custom_root_fields: {}
+array_relationships:
+  - name: findings
+    using:
+      foreign_key_constraint_on:
+        column: finding_type_id
+        table:
+          name: reporting_finding
+          schema: public
+  - name: reportedFindings
+    using:
+      foreign_key_constraint_on:
+        column: finding_type_id
+        table:
+          name: reporting_reportfindinglink
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - finding_type
+        - id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}

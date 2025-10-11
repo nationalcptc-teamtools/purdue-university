@@ -1,0 +1,207 @@
+{% extends "base_generic.html" %}
+
+{% load settings_tags humanize %}
+
+{% block pagetitle %}Infrastructure Update Control Panel{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb">
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Control Panel</li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <style>
+        .badge {
+            font-size: 14px;
+        }
+    </style>
+
+    <h2>Infrastructure Update Control Panel</h2>
+
+    <!-- DNS Section -->
+    <div class="container pb-2">
+        <h4 class="icon server-icon">DNS Records</h4>
+        <hr>
+
+        <p>A DNS record update for all domains was last requested on:</p>
+
+        <p>
+            <strong>{{ dns_last_update_requested }}</strong>
+        </p>
+
+        {% if dns_last_update_completed %}
+            {% if dns_last_update_completed == 'Failed' %}
+                <p>Request Status: <span class="badge badge-pill badge-danger">{{ dns_last_update_completed }}</span></p>
+                {% if dns_last_result %}
+                    <div class="mb-3 error-div">
+                        <strong>Error: </strong>
+                        <em class="error">
+                            {{ dns_last_result }}
+                        </em>
+                    </div>
+                {% endif %}
+            {% else %}
+                {% if dns_last_update_completed %}
+                    <p>Request Status: <span class="badge badge-pill badge-success"><span class="badge badge-pill badge-success">Completed on {{ dns_last_update_completed }} in {{ dns_last_update_time }} minutes</span></p>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+        <form class="js-queue-task" queue-task-url="{% url 'shepherd:ajax_update_dns' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="user_id" name="user_id" value='{{ user.get_username }}'>
+            <button type="submit" class="btn btn-primary col-md-4">Start Update</button>
+        </form>
+    </div>
+
+    <!-- Domain Library Update Section -->
+    {% if enable_namecheap %}
+        <div class="container pb-2">
+            <h4 class="icon cloud-sync-icon">Pull Domains from Namecheap</h4>
+            <hr>
+
+            <p>The domain library sync with Namecheap was last requested on:</p>
+            <p>
+                <strong>{{ namecheap_last_update_requested }}</strong>
+            </p>
+
+            {% if namecheap_last_update_completed %}
+                {% if namecheap_last_update_completed == 'Failed' %}
+                    <p>Request Status: <span class="badge badge-pill badge-danger">{{ namecheap_last_update_completed }}</span></p>
+                    {% if namecheap_last_result %}
+                        <div class="mb-3 error-div">
+                            <strong>Error: </strong>
+                            <em class="error">
+                                {{ namecheap_last_result.errors }}
+                            </em>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if namecheap_last_update_completed %}
+                        <p>Request Status: <span class="badge badge-pill badge-success">Completed on {{ namecheap_last_update_completed }} in {{ namecheap_last_update_time }} minutes</span></p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
+            <form class="js-queue-task" queue-task-url="{% url 'shepherd:ajax_update_namecheap' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="user_id" name="user_id" value='{{ user.get_username }}'>
+                <button type="submit" class="btn btn-primary col-md-4">Pull from Namecheap</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <!-- Domain Categories Section -->
+    {% if enable_vt %}
+        <div class="container pb-2">
+            <h4 class="icon heartbeat-icon">Domain Categories</h4>
+            <hr>
+
+            <p>An update for the domain health status and categories was last requested on:</p>
+            <p>
+                <strong>{{ cat_last_update_requested }}</strong>
+            </p>
+
+            {% if cat_last_update_completed %}
+                {% if cat_last_update_completed == 'Failed' %}
+                    <p>Request Status: <span class="badge badge-pill badge-danger">{{ cat_last_update_completed }}</span></p>
+                    {% if cat_last_result %}
+                        <div class="mb-3 error-div">
+                            <strong>Error: </strong>
+                            <em class="error">
+                                {{ cat_last_result }}
+                            </em>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if cat_last_update_completed %}
+                        <p>Request Status: <span class="badge badge-pill badge-success">Completed on {{ cat_last_update_completed }} in {{ cat_last_update_time }} minutes</span></p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
+            <p>Note that updates will require <em>at least</em> <strong>{{ update_time }}</strong> minutes ({{ total_domains }} non-expired domains * {{ sleep_time }} second sleep configured in settings).</p>
+
+            <form class="js-queue-task" queue-task-url="{% url 'shepherd:ajax_update_cat' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="user_id" name="user_id" value='{{ user.get_username }}'>
+                <button type="submit" class="btn btn-primary col-md-4">Start Update</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <!-- Cloud Section -->
+    {% if enable_cloud_monitor %}
+        <div class="container pb-2">
+            <h4 class="icon cloud-icon">Cloud Infrastructure</h4>
+            <hr>
+
+            <p>A cloud infrastructure check-up was last requested on:</p>
+
+            <p>
+                <strong>{{ cloud_last_update_requested }}</strong>
+            </p>
+
+            {% if cloud_last_update_completed %}
+                {% if cloud_last_update_completed == 'Failed' %}
+                    <p>Request Status: <span class="badge badge-pill badge-danger">{{ dns_last_update_completed }}</span></p>
+                    {% if cloud_last_result %}
+                        <div class="mb-3 error-div">
+                            <strong>Error: </strong>
+                            <em class="error">
+                                {{ cloud_last_result }}
+                            </em>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if cloud_last_update_completed %}
+                        <p>Request Status: <span class="badge badge-pill badge-success"><span class="badge badge-pill badge-success">Completed on {{ cloud_last_update_completed }} in {{ cloud_last_update_time }} minutes</span></p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+            <p>A cloud review can take a few minutes if Amazon Web Services is included, so expect this to take some time.</p>
+
+            <form class="js-queue-task" queue-task-url="{% url 'shepherd:ajax_cloud_monitor' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="user_id" name="user_id" value='{{ user.get_username }}'>
+                <button type="submit" class="btn btn-primary col-md-4">Start Cloud Review</button>
+            </form>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block morescripts %}
+    <!-- Queue Tasks with AJAX -->
+    <script>
+        $('.js-queue-task').each(function(index) {
+            $(this).on('submit', function (event) {
+                // Prevent default browser behavior for a form submission
+                event.preventDefault();
+                console.log("Form submitted");
+                // Get the URL from form attribute
+                var url = $(this).attr('queue-task-url');
+                // Send AJAX POST request
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val(),
+                    },
+                    success: function (data) {
+                        if (data['result'] == 'success') {
+                            // Do something
+                        }
+                        if (data['message']) {
+                            displayToastTop({type:data['result'], string:data['message'], title:'Task Update'});
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

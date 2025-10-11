@@ -1,0 +1,74 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Server Check-out{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb">
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shepherd:domains' %}">Servers</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shepherd:server_detail' server.id %}">{{ server.ip_address }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <!-- Form Error Section -->
+    {% if form.errors %}
+        <script>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+            {% endfor %}
+        </script>
+    {% endif %}
+
+    <!-- Form Section -->
+    {% crispy form form.helper %}
+{% endblock %}
+
+{% block morescripts %}
+    <!-- Script for Project Dropdown Filtering -->
+    <script>
+        $("#id_client").change(function () {
+            var url = $("#checkout-form").attr("data-projects-url");
+            var clientId = $(this).val();
+            $.ajax({
+                url: url,
+                data: {
+                    'client': clientId
+                },
+                success: function (data) {
+                    $("#id_project").html(data);
+                }
+            });
+        });
+    </script>
+
+    <!-- Script to set the default dates -->
+    <script>
+      $("#id_project").change(function () {
+        var url = $("#checkout-form").attr("data-project-url");
+        var projectId = $(this).val();
+        $.ajax({
+            url: url,
+            data: {
+                'project': projectId
+            },
+            success: function (data) {
+                if(data.length > 0) {
+                  project = data[0]['fields'];
+                  $("#id_start_date")[0].value = project['start_date'];
+                  $("#id_end_date")[0].value = project['end_date'];
+                }
+            }
+        });
+      });
+    </script>
+{% endblock %}

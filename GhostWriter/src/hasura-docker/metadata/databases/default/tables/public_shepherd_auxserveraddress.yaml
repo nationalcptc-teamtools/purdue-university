@@ -1,0 +1,73 @@
+table:
+  name: shepherd_auxserveraddress
+  schema: public
+configuration:
+  column_config:
+    ip_address:
+      custom_name: ipAddress
+    static_server_id:
+      custom_name: staticServerId
+  custom_column_names:
+    ip_address: ipAddress
+    static_server_id: staticServerId
+  custom_name: auxServerAddresses
+  custom_root_fields: {}
+object_relationships:
+  - name: server
+    using:
+      foreign_key_constraint_on: static_server_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - ip_address
+        - primary
+        - static_server_id
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - ip_address
+        - primary
+        - static_server_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - ip_address
+        - primary
+        - static_server_id
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - ip_address
+        - primary
+        - static_server_id
+      filter: {}
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - ip_address
+        - primary
+        - static_server_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - ip_address
+        - primary
+        - static_server_id
+      filter: {}
+      check: {}
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter: {}

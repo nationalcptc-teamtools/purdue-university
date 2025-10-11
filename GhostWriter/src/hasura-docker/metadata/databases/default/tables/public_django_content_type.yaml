@@ -1,0 +1,35 @@
+table:
+  name: django_content_type
+  schema: public
+configuration:
+  column_config:
+    app_label:
+      custom_name: appLabel
+  custom_column_names:
+    app_label: appLabel
+  custom_name: djangoContentType
+  custom_root_fields: {}
+array_relationships:
+  - name: authPermissions
+    using:
+      foreign_key_constraint_on:
+        column: content_type_id
+        table:
+          name: auth_permission
+          schema: public
+  - name: tags
+    using:
+      foreign_key_constraint_on:
+        column: content_type_id
+        table:
+          name: taggit_taggeditem
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - app_label
+        - model
+        - id
+      filter: {}
+    comment: ""

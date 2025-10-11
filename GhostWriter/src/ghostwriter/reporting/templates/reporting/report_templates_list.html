@@ -1,0 +1,195 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags custom_tags %}
+
+{% block pagetitle %}Report Template List{% endblock %}
+
+{% block breadcrumbs %}
+  <nav aria-label="breadcrumb">
+    <ul class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Report Templates</li>
+    </ul>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <!-- Filter Section -->
+  <div class="filter-form">
+    {% crispy filter.form filter.helper %}
+  </div>
+
+  {% if filter.qs|length == 0 %}
+    <div class="alert alert-warning offset-md-2 col-md-8 mt-3" role="alert">There are no findings yet, or your search
+      returned no results. Create a finding above or adjust your filters.
+    </div>
+  {% else %}
+    <!-- Report Templates Table Section -->
+    <p class="mt-3">This page lists all report templates and their current status. To investigate a status, view the
+      template's details page.</p>
+
+    <p><strong>Note:</strong> Only admins and managers may edit protected report templates.</p>
+
+    <a class="btn btn-info icon upload-icon col-2" href="{% url 'reporting:template_create' %}">Upload</a>
+    <a id="resetSortBtn" class="btn btn-secondary col-2 icon sync-icon" role="button">Reset Sort</a>
+
+    <table id="reportTemplateTable" class="tablesorter table table-sm table-hover">
+      <thead>
+      <tr>
+        <th class="align-middle pr-4 text-left">Status</th>
+        <th class="align-middle pr-4">Doc Type</th>
+        <th class="align-middle pr-4 text-left">Name</th>
+        <th class="align-middle pr-4 text-left">Orientation</th>
+        <th class="align-middle pr-4 text-left">Client</th>
+        <th class="align-middle pr-4">Project-Only</th>
+        <th class="sorter-false align-middle">Options</th>
+      </tr>
+      </thead>
+
+      {% for template in filter.qs %}
+        <tr>
+          <td class="align-middle text-left">
+            {% with template.get_status as status %}
+              <span class="badge
+                                {% if status == "success" %}
+                                    badge-success">Ready</span>
+              {% else %}
+                {% if status == "warning" %}
+                  badge-warning
+                {% elif status == "unknown" %}
+                  badge-secondary
+                {% else %}
+                  badge-danger
+                {% endif %}
+                ">{{ status|capfirst }}</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td
+            class="align-middle icon {% if template.doc_type.extension == "docx" %}word-icon{% else %}pptx-icon{% endif %}"></td>
+          <td class="align-middle text-left"><a class="clickable"
+                                                href="{% url 'reporting:template_detail' template.id %}">{{ template.name }}</a>
+          </td>
+          <td class="align-middle text-left">{% if template.landscape %}Landscsape{% else %}Portrait{% endif %}</td>
+          <td class="align-middle text-left">
+            {% if template.client %}
+              {{ template.client }}
+            {% else %}
+              <span style="display:none;">N/A</span>
+            {% endif %}
+          </td>
+          <td
+            class="{% if template.doc_type.doc_type == "project_docx" %}icon check-icon{% endif %}">
+            {% if template.doc_type.doc_type == "project_docx" %}
+              <span style="display:none;">Project Only</span>
+            {% else %}
+              <span style="display:none;">N/A</span>
+            {% endif %}
+          </td>
+
+          <td class="align-middle">
+            <div class="d-flex justify-content-center">
+              <span
+                class="icon preview-icon clickable-link"
+                title="View additional information"
+                onclick="openModal('#template_detail_{{ template.id }}')"
+              ></span>
+              <a class="icon download-icon" href="javascript:void(0)"
+                 onclick="downloadTemplate({{ template.id }}, '{{ template.filename }}')" title="Download template"></a>
+              {% if template.protected and request.user|is_privileged or not template.protected %}
+                <a class="icon edit-icon"
+                   href="{% url 'reporting:template_update' template.id %}"></a>
+                <a class="icon trash-icon" href="{% url 'reporting:template_delete' template.id %}"></a>
+              {% else %}
+                <a class="icon lock-icon" title="This template is protected and cannot be edited or deleted"
+                   href="javascript:void(0)"></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+{% endblock %}
+
+{% block morescripts %}
+  <!-- jQuery Tablesorter Script -->
+  <script>
+    $(document).ready(function () {
+      $('#reportTemplateTable').tablesorter(
+        {
+          sortInitialOrder: 'desc',
+          cssAsc: 'down',
+          cssDesc: 'up',
+          cssNone: 'none',
+          widgets: ['saveSort'],
+          widgetOptions: {
+            saveSort: true,
+            storage_page: 'templateLibraryTable'
+          }
+        }
+      );
+
+      $('.tablesorter').trigger('update');
+
+      $('#resetSortBtn').click(function() {
+        $('#reportTemplateTable')
+          .trigger('saveSortReset')
+          .trigger('sortReset');
+        return false;
+      });
+    });
+
+    function downloadTemplate(templateId, templateName) {
+      fetch("{% url 'reporting:template_download' 0 %}".replace('0', templateId), {
+        method: 'GET',
+      })
+        .then(response => {
+          if (!response.ok) {
+            if (response.status === 404) {
+              displayToastTop({
+                type: 'error',
+                string: 'Template file not found. The file may have been deleted or moved.'
+              });
+            } else {
+              displayToastTop({type: 'error', string: 'Error downloading template: ' + response.statusText});
+            }
+            throw new Error('Network response was not ok');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = templateName;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          displayToastTop({type: 'success', string: 'Download started...'});
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+  </script>
+
+  <script>
+    $(function () {
+      let availableTags = [
+        {% for tag in tags %}
+          '{{ tag.name|escapejs }}',
+        {% endfor %}
+      ];
+      $('#id_tags').autocomplete({
+        source: availableTags
+      });
+    });
+  </script>
+
+  {% comment %} Insert modals for additional template details {% endcomment %}
+  {% for template in filter.qs %}
+    {% include "snippets/template_detail_modal.html" with template=template %}
+  {% endfor %}
+{% endblock %}

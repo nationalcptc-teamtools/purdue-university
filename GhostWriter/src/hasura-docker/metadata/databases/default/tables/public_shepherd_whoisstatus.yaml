@@ -1,0 +1,30 @@
+table:
+  name: shepherd_whoisstatus
+  schema: public
+configuration:
+  column_config:
+    whois_status:
+      custom_name: whoisStatus
+  custom_column_names:
+    whois_status: whoisStatus
+  custom_name: whoisStatus
+  custom_root_fields: {}
+array_relationships:
+  - name: domains
+    using:
+      foreign_key_constraint_on:
+        column: whois_status_id
+        table:
+          name: shepherd_domain
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - whois_status
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}

@@ -1,0 +1,123 @@
+table:
+  name: shepherd_staticserver
+  schema: public
+configuration:
+  column_config:
+    extra_fields:
+      custom_name: extraFields
+    ip_address:
+      custom_name: ipAddress
+    last_used_by_id:
+      custom_name: lastUsedById
+    server_provider_id:
+      custom_name: serverProviderId
+    server_status_id:
+      custom_name: serverStatusId
+  custom_column_names:
+    extra_fields: extraFields
+    ip_address: ipAddress
+    last_used_by_id: lastUsedById
+    server_provider_id: serverProviderId
+    server_status_id: serverStatusId
+  custom_name: staticServer
+  custom_root_fields: {}
+object_relationships:
+  - name: serverProvider
+    using:
+      foreign_key_constraint_on: server_provider_id
+  - name: serverStatus
+    using:
+      foreign_key_constraint_on: server_status_id
+  - name: user
+    using:
+      foreign_key_constraint_on: last_used_by_id
+array_relationships:
+  - name: auxServerAddresses
+    using:
+      foreign_key_constraint_on:
+        column: static_server_id
+        table:
+          name: shepherd_auxserveraddress
+          schema: public
+  - name: checkouts
+    using:
+      foreign_key_constraint_on:
+        column: server_id
+        table:
+          name: shepherd_serverhistory
+          schema: public
+  - name: comments
+    using:
+      foreign_key_constraint_on:
+        column: server_id
+        table:
+          name: shepherd_servernote
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - extra_fields
+        - ip_address
+        - name
+        - note
+        - server_provider_id
+        - server_status_id
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - extra_fields
+        - ip_address
+        - name
+        - note
+        - server_provider_id
+        - server_status_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - extra_fields
+        - id
+        - ip_address
+        - last_used_by_id
+        - name
+        - note
+        - server_provider_id
+        - server_status_id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - extra_fields
+        - ip_address
+        - name
+        - note
+        - server_provider_id
+        - server_status_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - extra_fields
+        - ip_address
+        - name
+        - note
+        - server_provider_id
+        - server_status_id
+      filter: {}
+      check: {}
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter: {}

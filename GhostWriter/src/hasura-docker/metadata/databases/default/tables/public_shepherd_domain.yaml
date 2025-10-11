@@ -1,0 +1,193 @@
+table:
+  name: shepherd_domain
+  schema: public
+configuration:
+  column_config:
+    auto_renew:
+      custom_name: autoRenew
+    domain_status_id:
+      custom_name: domainStatusId
+    extra_fields:
+      custom_name: extraFields
+    health_status_id:
+      custom_name: healthStatusId
+    last_health_check:
+      custom_name: lastHealthCheck
+    last_used_by_id:
+      custom_name: lastUsedById
+    reset_dns:
+      custom_name: resetDns
+    vt_permalink:
+      custom_name: vtPermalink
+    whois_status_id:
+      custom_name: whoisStatusId
+  custom_column_names:
+    auto_renew: autoRenew
+    domain_status_id: domainStatusId
+    extra_fields: extraFields
+    health_status_id: healthStatusId
+    last_health_check: lastHealthCheck
+    last_used_by_id: lastUsedById
+    reset_dns: resetDns
+    vt_permalink: vtPermalink
+    whois_status_id: whoisStatusId
+  custom_name: domain
+  custom_root_fields: {}
+object_relationships:
+  - name: domainStatus
+    using:
+      foreign_key_constraint_on: domain_status_id
+  - name: healthStatus
+    using:
+      foreign_key_constraint_on: health_status_id
+  - name: user
+    using:
+      foreign_key_constraint_on: last_used_by_id
+  - name: whoisStatus
+    using:
+      foreign_key_constraint_on: whois_status_id
+array_relationships:
+  - name: checkouts
+    using:
+      foreign_key_constraint_on:
+        column: domain_id
+        table:
+          name: shepherd_history
+          schema: public
+  - name: comments
+    using:
+      foreign_key_constraint_on:
+        column: domain_id
+        table:
+          name: shepherd_domainnote
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - auto_renew
+        - categorization
+        - creation
+        - dns
+        - domain_status_id
+        - expiration
+        - expired
+        - extra_fields
+        - health_status_id
+        - name
+        - note
+        - registrar
+        - reset_dns
+        - vt_permalink
+        - whois_status_id
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - auto_renew
+        - burned_explanation
+        - categorization
+        - creation
+        - dns
+        - domain_status_id
+        - expiration
+        - expired
+        - extra_fields
+        - health_status_id
+        - last_health_check
+        - name
+        - note
+        - registrar
+        - reset_dns
+        - vt_permalink
+        - whois_status_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - auto_renew
+        - burned_explanation
+        - categorization
+        - creation
+        - dns
+        - domain_status_id
+        - expiration
+        - expired
+        - extra_fields
+        - health_status_id
+        - id
+        - last_health_check
+        - last_used_by_id
+        - name
+        - note
+        - registrar
+        - reset_dns
+        - vt_permalink
+        - whois_status_id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - auto_renew
+        - burned_explanation
+        - categorization
+        - creation
+        - dns
+        - domain_status_id
+        - expiration
+        - expired
+        - extra_fields
+        - health_status_id
+        - name
+        - note
+        - registrar
+        - reset_dns
+        - vt_permalink
+        - whois_status_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - auto_renew
+        - burned_explanation
+        - categorization
+        - creation
+        - dns
+        - domain_status_id
+        - expiration
+        - expired
+        - extra_fields
+        - health_status_id
+        - name
+        - note
+        - registrar
+        - reset_dns
+        - vt_permalink
+        - whois_status_id
+      filter: {}
+      check: {}
+event_triggers:
+  - name: CleanDomainName
+    definition:
+      enable_manual: true
+      insert:
+        columns: '*'
+      update:
+        columns:
+          - domain_status_id
+          - name
+    retry_conf:
+      interval_sec: 10
+      num_retries: 0
+      timeout_sec: 60
+    webhook: '{{ACTIONS_URL_BASE}}/event/domain/update'
+    headers:
+      - name: Hasura-Action-Secret
+        value_from_env: HASURA_ACTION_SECRET

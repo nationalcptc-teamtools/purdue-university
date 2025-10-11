@@ -1,0 +1,86 @@
+table:
+  name: shepherd_servernote
+  schema: public
+configuration:
+  column_config:
+    operator_id:
+      custom_name: operatorId
+    server_id:
+      custom_name: serverId
+  custom_column_names:
+    operator_id: operatorId
+    server_id: serverId
+  custom_name: serverNote
+  custom_root_fields: {}
+object_relationships:
+  - name: staticServer
+    using:
+      foreign_key_constraint_on: server_id
+  - name: user
+    using:
+      foreign_key_constraint_on: operator_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      set:
+        operator_id: x-hasura-User-Id
+      columns:
+        - note
+        - server_id
+  - role: user
+    permission:
+      check: {}
+      set:
+        operator_id: x-hasura-User-Id
+      columns:
+        - note
+        - server_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - note
+        - operator_id
+        - server_id
+        - timestamp
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - note
+        - server_id
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+      check:
+        note:
+          _neq: '""'
+  - role: user
+    permission:
+      columns:
+        - note
+        - server_id
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+      check:
+        operator_id:
+          _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+  - role: user
+    permission:
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id

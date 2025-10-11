@@ -1,0 +1,140 @@
+table:
+  name: rolodex_projecttarget
+  schema: public
+configuration:
+  column_config:
+    ip_address:
+      custom_name: ipAddress
+    project_id:
+      custom_name: projectId
+  custom_column_names:
+    ip_address: ipAddress
+    project_id: projectId
+  custom_name: target
+  custom_root_fields: {}
+object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - compromised
+        - hostname
+        - ip_address
+        - note
+        - project_id
+  - role: user
+    permission:
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      columns:
+        - compromised
+        - hostname
+        - ip_address
+        - note
+        - project_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - project_id
+        - compromised
+        - hostname
+        - ip_address
+        - note
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - compromised
+        - hostname
+        - ip_address
+        - note
+        - project_id
+      filter: {}
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - compromised
+        - hostname
+        - ip_address
+        - note
+        - project_id
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}
+  - role: user
+    permission:
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id

@@ -1,0 +1,52 @@
+table:
+  name: django_q_task
+  schema: public
+configuration:
+  column_config: {}
+  custom_column_names: {}
+  custom_name: task
+  custom_root_fields: {}
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - args
+        - attempt_count
+        - func
+        - group
+        - hook
+        - kwargs
+      backend_only: true
+  - role: user
+    permission:
+      check: {}
+      columns:
+        - args
+        - attempt_count
+        - func
+        - group
+        - hook
+        - kwargs
+      backend_only: true
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - success
+        - func
+        - group
+        - hook
+        - id
+        - name
+        - attempt_count
+        - args
+        - kwargs
+        - result
+        - started
+        - stopped
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}

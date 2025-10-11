@@ -1,0 +1,303 @@
+{% extends "base_generic.html" %}
+
+{% load bleach_tags extra_fields custom_tags %}
+
+{% block pagetitle %}{{ finding.display_title }} Details{% endblock %}
+
+{% block breadcrumbs %}
+  <nav aria-label="breadcrumb">
+    <ul class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'reporting:findings' %}">Findings</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ finding.display_title }}</li>
+    </ul>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <div class="dropdown">
+    <div class="dropdown-menu-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+         onclick="hamburger(this)">
+      <div class="bar1"></div>
+      <div class="bar2"></div>
+      <div class="bar3"></div>
+    </div>
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="finding-dropdown-btn">
+      <a class="dropdown-item icon edit-icon" href="{% url 'reporting:finding_update' finding.id %}">Edit</a>
+      <a class="dropdown-item icon add-icon js-assign-finding" assign-finding-id="{{ finding.id }}"
+         href="javascript:void(0);" assign-finding-csrftoken="{{ csrf_token }}"
+         assign-finding-url="{% url 'reporting:ajax_assign_finding' finding.id %}">Add to Report</a>
+      <a class="dropdown-item icon back-arrow-icon" href="{% url 'reporting:findings' %}">Return to Findings</a>
+      <a class="dropdown-item icon trash-icon" href="{% url 'reporting:finding_delete' finding.id %}">Delete</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>{{ finding.display_title }}</h2>
+  </div>
+
+  {% comment %} Finding Severity Badge {% endcomment %}
+  <div>
+    <span class="badge badge-dark
+        {% if finding.severity.weight == 1 %}
+            critical-background
+        {% elif finding.severity.weight == 2 %}
+            high-background
+        {% elif finding.severity.weight == 3 %}
+            medium-background
+        {% elif finding.severity.weight == 4 %}
+            low-background
+        {% endif %}
+        icon bug-icon"
+      {% if finding.cvss_score %}
+          style="cursor: help"
+          data-toggle="tooltip"
+          data-placement="bottom"
+          title="CVSS Vector: {{ finding.cvss_vector }}"
+      {% endif %}
+    >
+      {{ finding.severity.severity }} {% if finding.cvss_score %}({{ finding.cvss_score }}){% endif %}
+    </span>
+    {% comment %} Finding Type and Tags Badges {% endcomment %}
+    <span class="badge badge-primary
+        icon
+        {% if finding.finding_type.finding_type == "Cloud" %}
+            cloud-icon
+        {% elif finding.finding_type.finding_type == "Host" %}
+            host-icon
+        {% elif finding.finding_type.finding_type == "Mobile" %}
+            mobile-icon
+        {% elif finding.finding_type.finding_type == "Network" %}
+            network-icon
+        {% elif finding.finding_type.finding_type == "Physical" %}
+            physical-icon
+        {% elif finding.finding_type.finding_type == "Web" %}
+            code-icon
+        {% elif finding.finding_type.finding_type == "Wireless" %}
+            wireless-icon
+        {% else %}
+            bug-icon
+        {% endif %}"
+        style="cursor: help"
+        data-toggle="tooltip"
+        data-placement="bottom"
+        title="Finding Type"
+    >
+      {{ finding.finding_type.finding_type }}
+    </span>
+    {% for tag in finding.tags.names %}
+      <span class="badge badge-secondary">{{ tag }}</span>
+    {% endfor %}
+  </div>
+  <hr>
+
+  <div id="descriptionCard" class="card mb-3">
+    <div class="card-header finding-header icon writing-icon">
+      Description
+    </div>
+    <div class="card-body finding-content rich-text-field-preview">
+      {% if finding.description %}
+        <div class="rich-text-field-preview">{{ finding.description|bleach }}</div>
+      {% else %}
+        <p>Description write-up is needed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="impactCard" class="card mb-3">
+    <div class="card-header finding-header icon impact-icon">
+      Impact
+    </div>
+    <div class="card-body finding-content rich-text-field-preview">
+      {% if finding.impact %}
+        <div class="rich-text-field-preview">{{ finding.impact|bleach }}</div>
+      {% else %}
+        <p>Impact write-up is needed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="mitigationCard" class="card mb-3">
+    <div class="card-header finding-header icon help-icon">
+      Recommendations
+    </div>
+    <div class="card-body finding-content">
+      {% if finding.mitigation %}
+        <div class="rich-text-field-preview">{{ finding.mitigation|bleach }}</div>
+      {% else %}
+        <p>Recommendations are needed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="detectionCard" class="card mb-3">
+    <div class="card-header finding-header icon shield-icon">
+      Detection Recommendations
+    </div>
+    <div class="card-body finding-content">
+      {% if finding.host_detection_techniques %}
+        <h6 class="text-center card-title">Host Detection</h6>
+        <hr>
+        <div class="rich-text-field-preview">{{ finding.host_detection_techniques|bleach }}</div>
+      {% endif %}
+
+      {% if finding.network_detection_techniques %}
+        <h6 class="text-center card-title">Network Detection</h6>
+        <hr>
+        <div class="rich-text-field-preview">{{ finding.network_detection_techniques|bleach }}</div>
+      {% endif %}
+
+      {% if not finding.network_detection_techniques and not finding.host_detection_techniques %}
+        <p>No host or network detections have been written for this finding.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="replicationCard" class="card mb-3">
+    <div class="card-header finding-header icon help-icon">
+      Replication Steps
+    </div>
+    <div class="card-body finding-content">
+      {% if finding.replication_steps %}
+        <div class="rich-text-field-preview">{{ finding.replication_steps|bleach }}</div>
+      {% else %}
+        <p>Replication steps are needed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="referencesCard" class="card mb-3">
+    <div class="card-header finding-header icon help-icon">
+      References
+    </div>
+    <div class="card-body finding-content">
+      {% if finding.references %}
+        <div class="rich-text-field-preview">{{ finding.references|bleach }}</div>
+      {% else %}
+        <p>References are needed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if finding.finding_guidance %}
+    <div id="guidanceCard" class="card mb-3">
+      <div class="card-header finding-header icon help-icon">
+        Finding Guidance
+      </div>
+      <div class="card-body finding-content">
+        <div class="rich-text-field-preview">{{ finding.finding_guidance|bleach }}</div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if finding_extra_fields_spec %}
+    <h4 class="icon custom-field-icon">Extra Fields</h4>
+    <hr>
+
+    {% for field_spec in finding_extra_fields_spec %}
+      {% if field_spec.type != "rich_text" %}
+        <div class="row justify-content-md-center">
+          <h6 class="col-3 text-left">
+            {{ field_spec.display_name }}
+          </h6>
+          <div class="mt-2 col-3 text-md-center align-middle offset-2">
+            {% include "user_extra_fields/field.html" with extra_fields=finding.extra_fields field_spec=field_spec %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% for field_spec in finding_extra_fields_spec %}
+      {% if field_spec.type == "rich_text" %}
+        <div id="extraFieldCard_{{ field_spec.internal_name }}" class="card mb-3">
+          <div class="card-header finding-header icon custom-field-icon">
+            {{ field_spec.display_name }}
+          </div>
+          <div class="card-body finding-content">
+            {% include "user_extra_fields/field.html" with extra_fields=finding.extra_fields field_spec=field_spec %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <h4 class="icon comment-icon">Notes</h4>
+  <hr>
+
+  <p class="text-center">
+    <a class="icon add-icon btn btn-primary mb-1 col-2" href="{% url 'reporting:finding_note_add' finding.id %}">Add a
+      Note</a>
+  </p>
+
+  {% if finding.findingnote_set.all %}
+    {% for note in finding.findingnote_set.all reversed %}
+      <div id="note-container-{{ note.id }}">
+        <div class="container note-container {% if forloop.counter|divisibleby:2 %}darker{% endif %}">
+          <div class="float-left col-10 col-md-10 col-sm-8">
+            <div class="rich-text-field-preview">{{ note.note|bleach }}</div>
+          </div>
+
+          <div class="float-right col-2 col-md-2 col-sm-4">
+            <div>{% if note.operator %}<a class="note-link"
+                                          href="{% url 'users:user_detail' note.operator.username %}">{{ note.operator.username }}</a>{% else %}
+              <span class="note-link">Deleted</span>{% endif %}</div>
+            <div><p class="note-time">{{ note.timestamp }}</p></div>
+          </div>
+        </div>
+      </div>
+
+      {% if request.user == note.operator or request.user|is_privileged %}
+        <div class="pb-3">
+          <a class="note-link" href="{% url 'reporting:finding_note_edit' note.id %}">Edit</a> |
+          <a id="note-delete-button-{{ note.id }}" class="js-confirm-delete note-link" data-toggle="modal"
+             data-target="#confirm-delete-modal" href="javascript:void(0);" delete-target-csrftoken="{{ csrf_token }}"
+             delete-target-url="{% url 'reporting:ajax_delete_finding_note' note.id %}" delete-target-id="{{ note.id }}"
+             delete-target-type="note">Delete</a>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <p>No notes for this finding.</p>
+  {% endif %}
+{% endblock %}
+
+{% block morescripts %}
+  {% comment %} Include the reusable delete confirmation modal and related scripts {% endcomment %}
+  {% include "confirm_delete_modal.html" %}
+
+  {% comment %} Assign Finding with AJAX {% endcomment %}
+  <script>
+    $('.js-assign-finding').click(function () {
+      let url = $(this).attr('assign-finding-url');
+      let findingId = $(this).attr('assign-finding-id');
+      let csrftoken = $(this).attr('assign-finding-csrftoken')
+      $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader('X-CSRFToken', csrftoken);
+          }
+        }
+      });
+      $.ajax({
+        url: url,
+        type: 'POST',
+        dataType: 'json',
+        data: {
+          'finding': findingId
+        },
+        success: function (data) {
+          if (data['result'] === 'success') {
+            // Do Something
+          }
+          if (data['message']) {
+            displayToastTop({
+              type: data['result'],
+              string: data['message'],
+              title: 'Finding Assigned',
+              url: data['url']
+            });
+          }
+        }
+      });
+    });
+  </script>
+{% endblock %}

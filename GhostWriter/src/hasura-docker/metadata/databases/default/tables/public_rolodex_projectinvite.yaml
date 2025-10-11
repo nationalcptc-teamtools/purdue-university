@@ -1,0 +1,77 @@
+table:
+  name: rolodex_projectinvite
+  schema: public
+configuration:
+  column_config:
+    project_id:
+      custom_name: projectId
+    user_id:
+      custom_name: userId
+  custom_column_names:
+    project_id: projectId
+    user_id: userId
+  custom_name: projectInvite
+  custom_root_fields: {}
+object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+  - name: user
+    using:
+      foreign_key_constraint_on: user_id
+array_relationships:
+  - name: assignments
+    using:
+      manual_configuration:
+        column_mapping:
+          project_id: project_id
+        insertion_order: null
+        remote_table:
+          name: rolodex_projectassignment
+          schema: public
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      columns:
+        - comment
+        - project_id
+        - user_id
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - id
+        - project_id
+        - user_id
+        - comment
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - project_id
+        - user_id
+        - comment
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - comment
+        - project_id
+        - user_id
+      filter: {}
+      check: {}
+delete_permissions:
+  - role: manager
+    permission:
+      filter: {}

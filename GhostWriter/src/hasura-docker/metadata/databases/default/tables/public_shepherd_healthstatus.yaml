@@ -1,0 +1,30 @@
+table:
+  name: shepherd_healthstatus
+  schema: public
+configuration:
+  column_config:
+    health_status:
+      custom_name: healthStatus
+  custom_column_names:
+    health_status: healthStatus
+  custom_name: healthStatus
+  custom_root_fields: {}
+array_relationships:
+  - name: domains
+    using:
+      foreign_key_constraint_on:
+        column: health_status_id
+        table:
+          name: shepherd_domain
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - health_status
+        - id
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter: {}

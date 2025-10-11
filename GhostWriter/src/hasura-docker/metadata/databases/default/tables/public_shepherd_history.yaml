@@ -1,0 +1,134 @@
+table:
+  name: shepherd_history
+  schema: public
+configuration:
+  column_config:
+    activity_type_id:
+      custom_name: activityTypeId
+    client_id:
+      custom_name: clientId
+    domain_id:
+      custom_name: domainId
+    end_date:
+      custom_name: endDate
+    operator_id:
+      custom_name: operatorId
+    project_id:
+      custom_name: projectId
+    start_date:
+      custom_name: startDate
+  custom_column_names:
+    activity_type_id: activityTypeId
+    client_id: clientId
+    domain_id: domainId
+    end_date: endDate
+    operator_id: operatorId
+    project_id: projectId
+    start_date: startDate
+  custom_name: domainCheckout
+  custom_root_fields: {}
+object_relationships:
+  - name: activityType
+    using:
+      foreign_key_constraint_on: activity_type_id
+  - name: client
+    using:
+      foreign_key_constraint_on: client_id
+  - name: domain
+    using:
+      foreign_key_constraint_on: domain_id
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+  - name: user
+    using:
+      foreign_key_constraint_on: operator_id
+array_relationships:
+  - name: domainServerConnections
+    using:
+      foreign_key_constraint_on:
+        column: domain_id
+        table:
+          name: shepherd_domainserverconnection
+          schema: public
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - activity_type_id
+        - client_id
+        - domain_id
+        - end_date
+        - id
+        - note
+        - operator_id
+        - project_id
+        - start_date
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - activity_type_id
+        - client_id
+        - domain_id
+        - end_date
+        - note
+        - project_id
+        - start_date
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+      check: {}
+  - role: user
+    permission:
+      columns:
+        - activity_type_id
+        - client_id
+        - domain_id
+        - end_date
+        - note
+        - project_id
+        - start_date
+      filter:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+      check:
+        project:
+          _or:
+            - assignments:
+                operator_id:
+                  _eq: X-Hasura-User-Id
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - client:
+                invites:
+                  user_id:
+                    _eq: X-Hasura-User-Id

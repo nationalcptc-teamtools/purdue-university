@@ -1,0 +1,157 @@
+table:
+  name: rolodex_clientnote
+  schema: public
+configuration:
+  column_config:
+    client_id:
+      custom_name: clientId
+    operator_id:
+      custom_name: operatorId
+  custom_column_names:
+    client_id: clientId
+    operator_id: operatorId
+  custom_name: clientNote
+  custom_root_fields: {}
+object_relationships:
+  - name: client
+    using:
+      foreign_key_constraint_on: client_id
+  - name: user
+    using:
+      foreign_key_constraint_on: operator_id
+insert_permissions:
+  - role: manager
+    permission:
+      check: {}
+      set:
+        operator_id: x-hasura-User-Id
+      columns:
+        - client_id
+        - note
+  - role: user
+    permission:
+      check:
+        client:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - projects:
+                _or:
+                  - assignments:
+                      operator_id:
+                        _eq: X-Hasura-User-Id
+                  - invites:
+                      user_id:
+                        _eq: X-Hasura-User-Id
+      set:
+        operator_id: x-hasura-User-Id
+      columns:
+        - client_id
+        - note
+select_permissions:
+  - role: manager
+    permission:
+      columns:
+        - client_id
+        - id
+        - operator_id
+        - timestamp
+        - note
+      filter: {}
+  - role: user
+    permission:
+      columns: '*'
+      filter:
+        client:
+          _or:
+            - invites:
+                user_id:
+                  _eq: X-Hasura-User-Id
+            - projects:
+                _or:
+                  - assignments:
+                      operator_id:
+                        _eq: X-Hasura-User-Id
+                  - invites:
+                      user_id:
+                        _eq: X-Hasura-User-Id
+update_permissions:
+  - role: manager
+    permission:
+      columns:
+        - client_id
+        - note
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - operator_id:
+              _eq: X-Hasura-User-Id
+          - note:
+              _neq: '""'
+  - role: user
+    permission:
+      columns:
+        - client_id
+        - note
+      filter:
+        _and:
+          - operator_id:
+              _eq: X-Hasura-User-Id
+          - client:
+              _or:
+                - invites:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                - projects:
+                    _or:
+                      - assignments:
+                          operator_id:
+                            _eq: X-Hasura-User-Id
+                      - invites:
+                          user_id:
+                            _eq: X-Hasura-User-Id
+      check:
+        _and:
+          - operator_id:
+              _eq: X-Hasura-User-Id
+          - client:
+              _or:
+                - invites:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                - projects:
+                    _or:
+                      - assignments:
+                          operator_id:
+                            _eq: X-Hasura-User-Id
+                      - invites:
+                          user_id:
+                            _eq: X-Hasura-User-Id
+delete_permissions:
+  - role: manager
+    permission:
+      filter:
+        operator_id:
+          _eq: X-Hasura-User-Id
+  - role: user
+    permission:
+      filter:
+        _and:
+          - operator_id:
+              _eq: X-Hasura-User-Id
+          - client:
+              _or:
+                - invites:
+                    user_id:
+                      _eq: X-Hasura-User-Id
+                - projects:
+                    _or:
+                      - assignments:
+                          operator_id:
+                            _eq: X-Hasura-User-Id
+                      - invites:
+                          user_id:
+                            _eq: X-Hasura-User-Id

@@ -1,0 +1,73 @@
+{% extends "base_generic.html" %}
+{% load crispy_forms_tags %}
+
+{% block pagetitle %}Server Entry{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb">
+        <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shepherd:servers' %}">Servers</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Server Form</li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <p>Fill-out this form as completely as possible with information related to this server.</p>
+    <p>Servers created/edited through this form should be servers that are <em>reused</em> and tracked (i.e. servers you own). Virtual private servers spun up for a single project are tracked from within the project with the <em>Add a Transient Server</em> button.</p>
+
+    <!-- Form Error Section -->
+    {% if form.errors %}
+        <script>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                displayToastTop({type:'error', string:'{{ error|escapejs }}', context:'form'});
+            {% endfor %}
+        </script>
+    {% endif %}
+
+    <!-- Form Section -->
+    {% crispy form form.helper %}
+{% endblock %}
+
+{% block tabs %}
+    {{ block.super }}
+{% endblock %}
+
+{% block tabforms %}
+    {{ block.super }}
+{% endblock %}
+
+{% block morescripts %}
+    <!-- Formset Manipulation Buttons -->
+    <script>
+        $('.formset-add-{{ addresses.prefix }}').click(function() {
+            tinymce.remove();
+            var form_idx = $('#id_{{ addresses.prefix }}-TOTAL_FORMS').val();
+            $('#formset-{{ addresses.prefix }}').append($('#empty-form-{{ addresses.prefix }}').html().replace(/__prefix__/g, form_idx));
+            $('#id_{{ addresses.prefix }}-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+            tinyInit();
+            var new_form = $('#formset-{{ addresses.prefix }}').find('div.formset-container').last()
+            new_form.find('span.counter').html(parseInt(form_idx) + 1);
+            new_form.fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+        });
+    </script>
+
+    <!-- Toggle Primary Address Checkboxes -->
+    <script>
+        function checkboxUpdate(checkbox) {
+            if (checkbox.checked == true) {
+                var allCheckbox = document.getElementsByClassName("primary-checkbox");
+                for (var i=0; i < allCheckbox.length; i++) {
+                    allCheckbox[i].checked = false;
+                }
+                checkbox.checked = true;
+            }
+        }
+    </script>
+{% endblock %}

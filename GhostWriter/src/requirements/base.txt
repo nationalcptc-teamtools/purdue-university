@@ -1,0 +1,47 @@
+python-slugify==8.0.4  # https://github.com/un33k/python-slugify
+Pillow==10.4.0  # https://github.com/python-pillow/Pillow
+rcssmin==1.1.1  # https://github.com/ndparker/rcssmin
+argon2-cffi==23.1.0  # https://github.com/hynek/argon2_cffi
+redis==5.0.8  # https://github.com/antirez/redis
+uvicorn[standard]==0.22.0  # https://github.com/encode/uvicorn
+tzdata==2024.1
+
+# Django
+# ------------------------------------------------------------------------------
+django==4.2  # https://www.djangoproject.com/
+django-environ==0.10.0  # https://github.com/joke2k/django-environ
+django-model-utils==4.5.1  # https://github.com/jazzband/django-model-utils
+django-allauth==0.63.6  # https://github.com/pennersr/django-allauth
+django-crispy-forms==1.14.0  # https://github.com/django-crispy-forms/django-crispy-forms
+django-compressor==4.4  # https://github.com/django-compressor/django-compressor
+django-redis==5.4.0  # https://github.com/niwinz/django-redis
+channels==4.0.0  # https://channels.readthedocs.io/en/stable/index.html
+channels-redis==4.2.0 # https://github.com/django/channels_redis/
+djangorestframework==3.15.2  # https://github.com/encode/django-rest-framework
+django-health-check==3.18.3  # https://github.com/KristianOellegaard/django-health-check
+django-allauth-2fa==0.11.1  # https://github.com/valohai/django-allauth-2fa
+
+# Ghostwriter specific
+boto3==1.35.17
+botocore==1.35.17
+beautifulsoup4==4.12.3
+django-bleach==3.1.0
+django-filter==24.3
+django-import-export==4.1.1
+django-q2==1.7.2
+djangorestframework-api-key==3.0.0
+django-tinymce==3.4.0  # Deprecated, but kept here for legacy migrations
+docutils==0.18.1
+docxtpl==0.18.0
+dnspython==2.6.1
+jinja2==3.1.5
+python-docx==1.1.2
+python-nmap==0.7.1
+python-pptx==1.0.2
+requests==2.32.3
+django-timezone-field==7.0.0
+pyjwt[crypto]==2.9.0
+psutil==6.0.0
+django-taggit==6.1.0
+croniter==3.0.3
+cvss==3.2

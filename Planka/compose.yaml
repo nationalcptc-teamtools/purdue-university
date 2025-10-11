@@ -8,9 +8,9 @@ services:
       - ./background-images:/app/public/background-images
       - ./attachments:/app/private/attachments
     ports:
-      - 3000:1337
+      - 3002:1337
     environment:
-      - BASE_URL=http://localhost:3000
+      - BASE_URL=http://localhost:3002
       - DATABASE_URL=postgresql://postgres@postgres/planka
 
       - SECRET_KEY=notsecretkey!!!

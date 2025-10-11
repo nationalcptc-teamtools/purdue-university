@@ -1,0 +1,151 @@
+[
+  {
+    "model": "reporting.severity",
+    "pk": 5,
+    "fields": {
+      "severity": "Critical",
+      "weight": 1,
+      "color": "966FD6"
+    }
+  },
+  {
+    "model": "reporting.severity",
+    "pk": 4,
+    "fields": {
+      "severity": "High",
+      "weight": 2,
+      "color": "FF7E79"
+    }
+  },
+  {
+    "model": "reporting.severity",
+    "pk": 3,
+    "fields": {
+      "severity": "Medium",
+      "weight": 3,
+      "color": "F4B083"
+    }
+  },
+  {
+    "model": "reporting.severity",
+    "pk": 2,
+    "fields": {
+      "severity": "Low",
+      "weight": 4,
+      "color": "A8D08D"
+    }
+  },
+  {
+    "model": "reporting.severity",
+    "pk": 1,
+    "fields": {
+      "severity": "Informational",
+      "weight": 5,
+      "color": "8EAADB"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 1,
+    "fields": {
+      "finding_type": "Network"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 2,
+    "fields": {
+      "finding_type": "Physical"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 3,
+    "fields": {
+      "finding_type": "Wireless"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 4,
+    "fields": {
+      "finding_type": "Web"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 5,
+    "fields": {
+      "finding_type": "Mobile"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 6,
+    "fields": {
+      "finding_type": "Cloud"
+    }
+  },
+  {
+    "model": "reporting.findingtype",
+    "pk": 7,
+    "fields": {
+      "finding_type": "Host"
+    }
+  },
+  {
+    "model": "reporting.doctype",
+    "pk": 1,
+    "fields": {
+      "doc_type": "docx",
+      "name": "Report DOCX",
+      "extension": "docx"
+    }
+  },
+  {
+    "model": "reporting.doctype",
+    "pk": 2,
+    "fields": {
+      "doc_type": "pptx",
+      "name": "PPTX",
+      "extension": "pptx"
+    }
+  },
+  {
+    "model": "reporting.doctype",
+    "pk": 3,
+    "fields": {
+      "doc_type": "project_docx",
+      "name": "Project DOCX",
+      "extension": "docx"
+    }
+  },
+  {
+    "model": "reporting.reporttemplate",
+    "pk": 1,
+    "fields": {
+      "name": "Default Word Template",
+      "document": "/app/ghostwriter/media/templates/template.docx",
+      "description": "A sample Word template provided by Ghostwriter.",
+      "upload_date": "2023-09-19",
+      "last_update": "2023-09-19",
+      "doc_type": 1,
+      "p_style": "Normal",
+      "evidence_image_width": 6.5,
+      "lint_result": "{\"result\": \"success\", \"warnings\": [], \"errors\": []}"
+    }
+  },
+  {
+    "model": "reporting.reporttemplate",
+    "pk": 2,
+    "fields": {
+      "name": "Default PowerPoint Template",
+      "document": "/app/ghostwriter/media/templates/template.pptx",
+      "description": "A sample PowerPoint presentation template provided by Ghostwriter.",
+      "upload_date": "2023-09-19",
+      "last_update": "2023-09-19",
+      "doc_type": 2,
+      "lint_result": "{\"result\": \"success\", \"warnings\": [], \"errors\": []}"
+    }
+  }
+]
