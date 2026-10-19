@@ -1,7 +1,0 @@
-{
-    "name": "ghostwriter-js",
-    "workspaces": [
-        "tiptap-gw/",
-        "frontend/"
-    ]
-}

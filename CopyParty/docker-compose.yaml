@@ -1,11 +1,10 @@
 services:
   copyparty:
-    image: copyparty/ac:latest
-    container_name: copyparty
+    image: copyparty/ac:1.19.8
     ports:
-      - 3923:3923
+      - "3923:3923"
     volumes:
-      - /home/YOUR_USERNAME/docker/copyparty/conf:/cfg/config.conf:ro
-      - /home/YOUR_USERNAME/docker/copyparty/db:/cfg/hists #database files
-      - /home/YOUR_USERNAME/media:/media #files being exposed to copyparty
+      - ${TEAMTOOLS_HOME:-${HOME}/.local/share/teamtools}/copyparty/config.conf:/cfg/config.conf:ro
+      - ${TEAMTOOLS_HOME:-${HOME}/.local/share/teamtools}/copyparty/history:/cfg/hists
+      - ${TEAMTOOLS_HOME:-${HOME}/.local/share/teamtools}/copyparty/media:/media
     restart: unless-stopped

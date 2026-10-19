@@ -1,0 +1,20 @@
+[Unit]
+Description=cork - shared recon hub for the pentest team
+After=network.target
+
+[Service]
+Type=simple
+User=cork
+Group=cork
+WorkingDirectory=/var/lib/cork
+ExecStart=/usr/local/bin/cork serve --data /var/lib/cork --listen 0.0.0.0:8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/cork
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,91 @@
+{{define "dashboard"}}
+{{template "head" .}}
+{{template "nav" .}}
+{{template "sse" .}}
+<main id="dash" data-live tabindex="-1">
+  <header class="page-heading" id="content">
+    <div><h1>{{.Engage}}</h1></div>
+    <span class="workspace-state"><i aria-hidden="true"></i><span id="connection-status" role="status">Connecting…</span></span>
+    <a class="btn" href="/import">Import scan</a>
+  </header>
+  {{if .Alarms}}
+  <div class="banner">
+    <strong>Out-of-scope data received</strong>
+    <span class="grow">
+      {{range .Alarms}}<span class="mono">{{.Summary}}</span><br>{{end}}
+    </span>
+    <form class="inline" method="post" action="/alarm/ack" hx-post="/alarm/ack" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <button class="small">Acknowledge</button>
+    </form>
+  </div>
+  {{end}}
+
+  <div class="counts">
+    <a class="count" href="/hosts"><span class="n">{{.Stats.HostsTotal}}</span><span class="l">In-scope hosts</span></a>
+    <a class="count" href="/hosts?status=untouched"><span class="n st-untouched">{{.Stats.HostsUntouched}}</span><span class="l">Untouched</span></a>
+    <a class="count" href="/hosts?status=in_progress"><span class="n st-in_progress">{{.Stats.HostsInProgress}}</span><span class="l">In progress</span></a>
+    <a class="count" href="/hosts?status=compromised"><span class="n st-compromised">{{.Stats.HostsCompromised}}</span><span class="l">Compromised</span></a>
+    <a class="count" href="/tasks?prio=1"><span class="n">{{.Stats.OpenP1Tasks}}</span><span class="l">Open P1 tasks</span></a>
+  </div>
+  <div class="secondary-counts">
+    <span><strong>{{.Stats.Services}}</strong> open services</span>
+    <span><strong>{{.Stats.Creds}}</strong> working creds</span>
+    <span><strong>{{.Stats.AdminCreds}}</strong> admin creds</span>
+    <span><strong>{{.Stats.HostsDone}}</strong> hosts done</span>
+  </div>
+  {{if .NewEvents}}
+  <details class="card new-activity">
+    <summary>New since your last visit <span class="newbadge">{{len .NewEvents}}</span></summary>
+    <div class="feed">{{range .NewEvents}}{{template "eventRow" .}}{{end}}</div>
+  </details>
+  {{end}}
+
+  <div class="dashboard-layout">
+    <div class="card">
+      <h2 class="section-heading">Unclaimed P1 tasks <a href="/tasks?prio=1">Task board</a></h2>
+      {{if .UnclaimedP1}}
+      <table>
+        <tr><th>Priority</th><th>Task</th><th>Host</th><th></th></tr>
+        {{range .UnclaimedP1}}
+        <tr>
+          <td><span class="prio prio-{{.Priority}}">P{{.Priority}}</span></td>
+          <td>{{.Title}}</td>
+          <td>{{if .HostIP}}<a class="mono" href="/hosts/{{.HostIP}}">{{.HostIP}}</a>{{end}}</td>
+          <td class="right">
+            <form class="inline" method="post" action="/tasks/{{.ID}}/claim" hx-post="/tasks/{{.ID}}/claim" hx-headers='{"X-CSRF-Token":"{{$.CSRF}}"}'>
+              <input type="hidden" name="csrf" value="{{$.CSRF}}">
+              <input type="hidden" name="steal" value="false">
+              <button class="small">Claim</button>
+            </form>
+          </td>
+        </tr>
+        {{end}}
+      </table>
+      {{else}}<p class="empty-state">Every P1 task has an owner.</p>{{end}}
+    </div>
+
+    <div class="card">
+      <h2>My claims</h2>
+      {{if or .MyClaims .MyTasks}}
+      {{range .MyClaims}}
+      <div class="ev"><span class="dot st-{{.Status}}"></span><a class="mono" href="/hosts/{{.IP}}">{{.IP}}</a> <span class="muted">claimed {{tsAgo .ClaimedAt}} ago</span></div>
+      {{end}}
+      {{range .MyTasks}}
+      <div class="ev"><span class="prio prio-{{.Priority}}">P{{.Priority}}</span> {{.Title}} {{if .HostIP}}<a class="mono" href="/hosts/{{.HostIP}}">{{.HostIP}}{{with .Service}}:{{.}}{{end}}</a>{{end}}</div>
+      {{end}}
+      {{else}}<p class="empty-state">You haven't claimed anything. Pick an <a href="/hosts?status=untouched&amp;owner=(none)">untouched host</a> or a task above.</p>{{end}}
+    </div>
+  </div>
+
+  <div class="dashboard-secondary">
+  <div class="card">
+    <h2 class="section-heading">Recent activity <a href="/activity">All activity</a></h2>
+    <div class="feed" id="feed">
+      {{range .Feed}}{{template "eventRow" .}}{{else}}<p class="empty-state">No activity yet. Push a scan with <code>cork push</code> or use <a href="/import">Import</a>.</p>{{end}}
+    </div>
+  </div>
+  </div>
+</main>
+{{template "foot"}}
+{{end}}

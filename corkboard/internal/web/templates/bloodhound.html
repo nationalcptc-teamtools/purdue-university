@@ -1,0 +1,68 @@
+{{define "bloodhound"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="bloodhoundpage" data-live tabindex="-1">
+  <header class="page-heading" id="content">
+    <div><h1>BloodHound</h1><p>Marks owned computers and accounts in BloodHound CE.</p></div>
+    <a class="btn" href="/bloodhound/export">Download owned list</a>
+  </header>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+  {{if .Notice}}<div class="note" role="status">{{.Notice}}</div>{{end}}
+  <div class="grid c2">
+    <section class="card">
+      <h2 class="section-heading">Connection <span class="status-pill">{{if .BH.Configured}}Configured{{else if .BH.Enabled}}Needs setup{{else}}Disabled{{end}}</span></h2>
+      {{if .BH.Enabled}}
+        <p>{{if .BH.URL}}<span class="mono">{{.BH.URL}}</span>{{end}}</p>
+        <p class="muted small">{{if .BH.AutoSync}}Automatic sync checks for new compromises and retries failures every 30 seconds.{{else}}Manual sync is enabled. Use Sync ownership when you're ready.{{end}}</p>
+        {{if .BH.Version}}<p class="small">BloodHound {{.BH.Version}} · {{.BH.Mode}}</p>{{end}}
+        {{if .BH.LastSyncAt}}<p class="muted small">Last successful ownership update {{tsAgo .BH.LastSyncAt}} ago.</p>{{end}}
+        {{if .BH.Error}}<p class="err small">{{.BH.Error}}</p>{{end}}
+        {{if .BH.LastError}}<p class="err small">{{.BH.LastError}}</p>{{end}}
+        <div class="actions">
+          <form method="post" action="/bloodhound/check" hx-post="/bloodhound/check"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Test connection</button></form>
+          <form method="post" action="/bloodhound/sync" hx-post="/bloodhound/sync"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Sync ownership</button></form>
+        </div>
+      {{else}}
+        <p class="muted">Configure your BloodHound URL and API token environment variables in <code>server.yaml</code>, then enable the integration and restart Corkboard.</p>
+        <p class="small muted">Owned identities can still be recorded and exported while the connection is disabled.</p>
+      {{end}}
+    </section>
+    <section class="card">
+      <h2>What gets synced</h2>
+      <p class="small">Computers come from compromised, in-scope hosts with a known fully qualified hostname. Add an explicit mapping below if a host has several names or no matching name.</p>
+      <p class="small">Accounts are included only when you deliberately record them as owned. A working credential alone does not mark an account owned.</p>
+      <p class="muted small">Only the selected identity is sent. Passwords, hashes, notes, and findings stay in Corkboard. Ownership updates are additive; clear ownership in BloodHound when needed.</p>
+    </section>
+  </div>
+  <section class="card">
+    <h2>Record an owned identity</h2>
+    <p class="muted small">Use the exact BloodHound name or object ID: computer FQDN, account USER@DOMAIN, or SID. Computer mappings require an already compromised host IP.</p>
+    <form class="filter-bar" method="post" action="/bloodhound/targets" hx-post="/bloodhound/targets">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <select name="kind" aria-label="Identity kind"><option value="User">Account</option><option value="Computer">Computer</option></select>
+      <input class="search" name="identity" type="text" aria-label="Owned identity" placeholder="e.g. ALICE@CORP.LOCAL" maxlength="512" required>
+      <input name="ip" type="text" aria-label="Computer host IP" placeholder="Host IP (computers only)">
+      <button class="primary">Record as owned</button>
+    </form>
+  </section>
+  <section class="card table-card">
+    <div class="table-caption"><h2>Ownership sync</h2><span class="small muted">{{len .BH.Targets}} mappings</span></div>
+    <table>
+      <tr><th>Kind</th><th>Identity</th><th>Corkboard host</th><th>Status</th><th>BloodHound object</th><th>Last update</th></tr>
+      {{range .BH.Targets}}
+      <tr>
+        <td>{{if eq .Kind "User"}}Account{{else}}Computer{{end}}</td>
+        <td class="mono">{{.Identity}}</td>
+        <td>{{if .IP}}<a class="mono" href="/hosts/{{.IP}}">{{.IP}}</a>{{else}}<span class="muted">—</span>{{end}}</td>
+        <td><span class="status-pill {{if eq .State "synced"}}st-done{{else if eq .State "error"}}st-compromised{{else}}st-untouched{{end}}">{{.State}}</span>{{if .Error}}<div class="small err">{{.Error}}</div>{{end}}</td>
+        <td class="small">{{if .ResolvedName}}{{.ResolvedName}}{{else}}<span class="muted">—</span>{{end}}{{if .ObjectID}}<div class="mono muted">{{.ObjectID}}</div>{{end}}</td>
+        <td class="small muted">{{tsAgo .UpdatedAt}} ago</td>
+      </tr>
+      {{else}}
+      <tr><td class="empty-state" colspan="6"><strong>No owned identities queued</strong>Record an owned account, or mark a host compromised and run Sync ownership.</td></tr>
+      {{end}}
+    </table>
+  </section>
+</main>
+{{template "foot"}}
+{{end}}

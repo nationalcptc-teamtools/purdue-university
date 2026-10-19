@@ -1,0 +1,24 @@
+{{define "changes"}}{{template "head" .}}{{template "nav" .}}
+<main id="content">
+  <header class="page-heading"><div><h1>{{if .Standup}}Standup{{else}}What changed{{end}}</h1>
+  <p class="muted">{{if .Standup}}Everything recorded in the chosen window.{{else}}Changes by others since you last marked this read. Opening the page does not mark it read.{{end}}</p></div></header>
+  <form class="card filter-bar" method="get" action="/changes">
+    <label>Since <input name="since" value="{{.Since}}" placeholder="8h or 2026-10-24T09:00:00-04:00" size="28"></label>
+    <label><input type="checkbox" name="all" value="1" {{if .All}}checked{{end}}> Include my own</label>
+    <button>Show</button> <a class="small" href="/changes">Since last read</a> <a class="small" href="/changes?since=12h&amp;all=1">Standup (12h)</a>
+  </form>
+  {{if .Err}}<p class="err">{{.Err}}</p>{{end}}
+  {{if not .Digest.Groups}}<p class="empty-state">Nothing new.</p>{{end}}
+  {{range .Digest.Groups}}
+  <section class="card"><h2>{{.Title}} <span class="muted">({{.Count}})</span></h2>
+    <div class="feed">{{range .Items}}
+      <div class="ev"><span class="t">{{.Actor}}, recorded {{tsAgo .At}} ago{{with .OccurredAt}}, occurred {{tsAgo .}} ago{{end}}</span>
+      <span class="k">{{statusName .Kind}}</span> {{.Summary}}{{if .HostIP}} <a class="mono small" href="/hosts/{{.HostIP}}">{{.HostIP}}</a>{{end}}</div>
+    {{end}}</div>
+    {{if gt .Count (len .Items)}}<p class="small muted">{{len .Items}} newest of {{.Count}} shown. <a href="/activity">Full activity</a></p>{{end}}
+  </section>
+  {{end}}
+  {{if and (not .Standup) .Digest.Total}}
+  <form method="post" action="/changes/ack"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="through" value="{{.Digest.Through}}"><button class="primary">Mark these {{.Digest.Total}} read</button></form>
+  {{end}}
+</main>{{template "foot" .}}{{end}}

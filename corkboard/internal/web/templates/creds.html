@@ -1,0 +1,128 @@
+{{define "creds"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="credspage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Credentials</h1><p>Access matrix: highest historical access. <a href="/checks">Current endpoint checks and results</a></p></div></header>
+  {{if .Notice}}<div class="note" role="status">{{.Notice}}</div>{{end}}
+  <div class="grid c2">
+    <details class="card form-card" id="add-cred" {{if .Forms.CredErr}}open{{end}}>
+      <summary>Add a credential</summary>
+      {{if .Forms.CredErr}}<div class="note err" role="alert">{{.Forms.CredErr}}</div>{{end}}
+      <form class="form-grid" method="post" action="/creds" autocomplete="off">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label class="field"><span>Domain <span class="hint">optional</span></span>
+          <input type="text" name="domain" value="{{.Forms.Cred.Domain}}" placeholder="CORP">
+        </label>
+        <label class="field">Username
+          <input type="text" name="username" value="{{.Forms.Cred.Username}}" required>
+        </label>
+        <label class="field">Secret
+          <input type="password" name="secret" autocomplete="new-password" required>
+        </label>
+        <label class="field">Secret type
+          <select name="secret_type">
+            {{range $t := (list "password" "ntlm" "aes" "ssh_key" "ticket" "hash_uncracked" "other")}}<option value="{{$t}}" {{if eq $t $.Forms.Cred.SecretType}}selected{{end}}>{{$t}}</option>{{end}}
+          </select>
+        </label>
+        <label class="field wide"><span>Notes <span class="hint">optional</span></span>
+          <input type="text" name="notes" value="{{.Forms.Cred.Notes}}">
+        </label>
+        <label class="field"><span>Works on host <span class="hint">optional</span></span>
+          <input type="text" name="ip" value="{{.Forms.Cred.IP}}" list="cred-host-ips" placeholder="10.0.0.10">
+        </label>
+        <label class="field">Protocol
+          <select name="protocol">{{template "protoOptions" .Forms.Cred.Protocol}}</select>
+        </label>
+        <label class="field">Access level
+          <select name="level">{{template "levelOptions" .Forms.Cred.Level}}</select>
+        </label>
+        <div class="field form-submit"><button class="primary">Add credential</button></div>
+      </form>
+    </details>
+    <details class="card form-card" id="record-access" {{if .Forms.AccessErr}}open{{end}}>
+      <summary>Record where a credential works</summary>
+      {{if .Forms.AccessErr}}<div class="note err" role="alert">{{.Forms.AccessErr}}</div>{{end}}
+      {{if .Rows}}
+      <form class="form-grid" method="post" action="/creds/access">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label class="field wide">Credential
+          <select name="cred" required>
+            {{range .Rows}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) $.Forms.Access.CredID}}selected{{end}}>#{{.ID}} {{if .Domain}}{{.Domain}}\{{end}}{{.Username}} ({{.SecretType}})</option>{{end}}
+          </select>
+        </label>
+        <label class="field">Host IP
+          <input type="text" name="ip" value="{{.Forms.Access.IP}}" list="cred-host-ips" placeholder="10.0.0.10" required>
+        </label>
+        <label class="field">Protocol
+          <select name="protocol">{{template "protoOptions" .Forms.Access.Protocol}}</select>
+        </label>
+        <label class="field">Access level
+          <select name="level">{{template "levelOptions" .Forms.Access.Level}}</select>
+        </label>
+        <div class="field form-submit"><button class="primary">Record access</button></div>
+      </form>
+      {{else}}<p class="muted small">Add a credential first.</p>{{end}}
+    </details>
+    <datalist id="cred-host-ips">{{range .HostIPs}}<option value="{{.}}">{{end}}</datalist>
+  </div>
+  <div class="card">
+    <div class="view-tabs" aria-label="Credential views">
+        <a class="{{if eq .View "table"}}active{{end}}" href="/creds">Table</a>
+        <a class="{{if eq .View "matrix"}}active{{end}}" href="/creds?view=matrix">Matrix</a>
+    </div>
+
+    {{if eq .View "table"}}
+    {{if .Rows}}
+    <table>
+      <tr>
+        <th>ID</th><th>Account</th><th>Type</th><th>Source</th><th>Added by</th>
+        <th>Valid on</th><th>Admin on</th><th>Secret</th>
+      </tr>
+      {{range .Rows}}
+      <tr>
+        <td class="mono">{{.ID}}</td>
+        <td class="mono">{{if .Domain}}{{.Domain}}\{{end}}{{.Username}}</td>
+        <td>{{.SecretType}}</td>
+        <td>{{.Source}}</td>
+        <td>{{.AddedBy}}</td>
+        <td class="right">{{.ValidOn}}</td>
+        <td class="right">{{.AdminOn}}</td>
+        <td class="right"><code class="secret">{{.Secret}}</code> <button type="button" class="small copy" data-copy="{{.Secret}}">Copy</button></td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p class="muted">No credentials yet. Push a NetExec workspace or add one above.</p>
+    {{end}}
+    {{else}}
+    {{if .Matrix.Creds}}
+    <div class="cov">
+    <table>
+      <tr>
+        <th>Account</th>
+        {{range .Matrix.Hosts}}<th class="stage mono" title="{{.IP}}">{{.IP}}</th>{{end}}
+      </tr>
+      {{range $c := $.Matrix.Creds}}
+      <tr>
+        <td class="mono">{{if $c.Domain}}{{$c.Domain}}\{{end}}{{$c.Username}}</td>
+        {{range $h := $.Matrix.Hosts}}
+        {{$lvl := index (index $.Matrix.Cells $c.ID) $h.ID}}
+        <td class="cell {{if eq $lvl "admin"}}admin{{else if eq $lvl "valid"}}valid{{end}}" title="{{$c.ID}} × {{$h.IP}}: {{if $lvl}}{{$lvl}}{{else}}none{{end}}">{{if eq $lvl "admin"}}A{{else if eq $lvl "valid"}}·{{end}}</td>
+        {{end}}
+      </tr>
+      {{end}}
+    </table>
+    </div>
+    <p class="legend"><span><b class="swatch admin">A</b> Admin</span><span><b class="swatch valid">·</b> Valid</span><span>Only hosts with recorded access are shown.</span></p>
+    {{else}}
+    <p class="muted">No credentials with recorded access yet.</p>
+    {{end}}
+    {{end}}
+  </div>
+</main>
+{{template "foot"}}
+{{end}}
+
+{{define "protoOptions"}}{{$sel := .}}{{range $p := (list "smb" "ldap" "mssql" "winrm" "rdp" "ssh" "other")}}<option value="{{$p}}" {{if eq $p $sel}}selected{{end}}>{{$p}}</option>{{end}}{{end}}
+
+{{define "levelOptions"}}{{$sel := .}}{{range $l := (list "valid" "admin" "invalid")}}<option value="{{$l}}" {{if eq $l $sel}}selected{{end}}>{{$l}}</option>{{end}}{{end}}

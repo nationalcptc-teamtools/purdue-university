@@ -1,0 +1,60 @@
+{{define "findings"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="findingspage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Findings</h1><p>Recorded and nuclei findings start as candidates. Nothing is confirmed until someone confirms it.</p></div></header>
+  <form method="get" action="/findings" class="card" hx-get="/findings" hx-target="#findingspage" hx-select="#findingspage" hx-swap="outerHTML" hx-push-url="true">
+    <div class="filter-bar">
+      <select name="state" aria-label="Finding state">
+        <option value="">Any state</option>
+        {{range .States}}<option value="{{.}}" {{if eq $.F.State .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <button class="primary">Apply</button>
+      <a class="small" href="/findings">Reset</a>
+    </div>
+  </form>
+
+  <p><a class="button" href="/findings/new">Add finding</a></p>
+ <div class="card table-card">
+    <div class="table-caption"><h2>{{len .Findings}} findings</h2></div>
+    <table>
+      <tr><th>Severity</th><th>Title</th><th>Source</th><th>Hosts</th><th>State</th><th></th></tr>
+      {{$csrf := .CSRF}}
+      {{range .Findings}}
+      <tr id="finding-{{.ID}}">
+        <td><span class="prio sev-{{.Severity}}">{{.Severity}}</span></td>
+        <td><a href="/findings/{{.ID}}">{{.Title}}</a>{{if .GWLibraryTitle}} <span class="muted small">({{.GWLibraryTitle}})</span>{{end}}</td>
+        <td class="small muted">{{.Source}}</td>
+        <td class="small mono">{{range .Hosts}}{{.IP}} {{end}}</td>
+        <td><span class="status-pill st-{{.State}}">{{.State}}</span>{{if .NeedsReview}} <span>{{.NeedsReview}} assets need review</span>{{end}}{{if .ReportUpdate}} Report update needed{{end}}</td>
+        <td class="actions small">
+          {{if eq .State "candidate"}}
+          <form method="post" action="/findings/{{.ID}}/state" class="inline-form" hx-post="/findings/{{.ID}}/state" hx-target="#finding-{{.ID}}" hx-swap="outerHTML">
+            <input type="hidden" name="csrf" value="{{$csrf}}">
+            <input type="hidden" name="state" value="confirmed">
+            <button class="primary small-btn">Confirm</button>
+          </form>
+          <form method="post" action="/findings/{{.ID}}/state" class="inline-form" hx-post="/findings/{{.ID}}/state" hx-target="#finding-{{.ID}}" hx-swap="outerHTML">
+            <input type="hidden" name="csrf" value="{{$csrf}}">
+            <input type="hidden" name="state" value="rejected">
+            <input name="reason" placeholder="Rejection reason" required><button class="small-btn">Reject</button>
+          </form>
+          {{else if eq .State "confirmed"}}
+          <form method="post" action="/findings/{{.ID}}/state" class="inline-form" hx-post="/findings/{{.ID}}/state" hx-target="#finding-{{.ID}}" hx-swap="outerHTML">
+            <input type="hidden" name="csrf" value="{{$csrf}}">
+            <input type="hidden" name="state" value="reported">
+            <button class="primary small-btn">Mark reported</button>
+          </form>
+          {{else}}
+          <span class="muted">—</span>
+          {{end}}
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="6" class="empty-state">No findings yet. Record one from a host or service, or push nuclei JSONL.</td></tr>
+      {{end}}
+    </table>
+  </div>
+</main>
+{{template "foot" .}}
+{{end}}

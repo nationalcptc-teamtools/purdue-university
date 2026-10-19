@@ -1,0 +1,62 @@
+{{define "hosts"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="hostspage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Hosts</h1></div></header>
+  <form method="get" action="/hosts" class="card" hx-get="/hosts" hx-target="#hostspage" hx-select="#hostspage" hx-swap="outerHTML" hx-push-url="true">
+    <div class="filter-bar">
+      <input class="search" type="search" name="q" value="{{.F.Q}}" placeholder="Search IP, hostname, tag or service…  /" aria-label="Search hosts">
+      <select name="status" aria-label="Host status">
+        <option value="">Any status</option>
+        {{range $s := .Statuses}}<option value="{{$s}}" {{if eq $.F.Status $s}}selected{{end}}>{{$s}}</option>{{end}}
+      </select>
+      <select name="zone" aria-label="Scope zone">
+        <option value="">Any zone</option>
+        <option value="in" {{if eq .F.Zone "in"}}selected{{end}}>in</option>
+        <option value="caution" {{if eq .F.Zone "caution"}}selected{{end}}>caution</option>
+        <option value="out" {{if eq .F.Zone "out"}}selected{{end}}>out</option>
+        <option value="unknown" {{if eq .F.Zone "unknown"}}selected{{end}}>unknown</option>
+      </select>
+      <input class="short-input" type="text" name="tag" value="{{.F.Tag}}" placeholder="Tag" aria-label="Host tag">
+      <select name="owner" aria-label="Owner">
+        <option value="">Any owner</option>
+        <option value="(none)" {{if eq .F.Owner "(none)"}}selected{{end}}>Unclaimed</option>
+        <option value="{{.User}}" {{if eq .F.Owner .User}}selected{{end}}>Mine</option>
+      </select>
+      <input class="short-input" type="number" name="port" value="{{if .F.Port}}{{.F.Port}}{{end}}" placeholder="Port" min="1" max="65535" aria-label="Service port">
+      <select name="sort" aria-label="Sort hosts">
+        <option value="ip" {{if eq .F.Sort "ip"}}selected{{end}}>Sort by IP</option>
+        <option value="priority" {{if eq .F.Sort "priority"}}selected{{end}}>Sort by priority</option>
+        <option value="last_seen" {{if eq .F.Sort "last_seen"}}selected{{end}}>Sort by last seen</option>
+      </select>
+      <input class="short-input" type="text" name="service" value="{{.F.Service}}" placeholder="Service" aria-label="Service name">
+      <input type="hidden" name="has_cred" value="{{.F.HasCred}}">
+      <button class="primary">Apply</button>
+      <a class="small" href="/hosts">Reset</a>
+    </div>
+  </form>
+
+  <div id="hosts-wrap" class="card table-card">
+    <div class="table-caption"><h2>{{.Total}} hosts</h2></div>
+    <table>
+      <tr>
+        <th>Status</th><th>Host</th><th>OS</th><th>Services</th><th>Explored</th><th>Owner</th><th>Priority</th>
+      </tr>
+      {{range .Hosts}}
+      <tr class="{{if eq .Zone "out"}}row-out{{end}} {{if eq .Status "locked"}}row-locked{{end}}" id="host-{{.ID}}">
+        <td><span class="status-pill st-{{.Status}}"><span class="dot st-{{.Status}}" aria-hidden="true"></span>{{statusName .Status}}</span>{{if eq .Zone "unknown"}} <span class="muted" title="Scope not established">?</span>{{end}}</td>
+        <td class="host-cell"><a class="mono" href="/hosts/{{.IP}}">{{.IP}}</a>{{if .Hostnames}}<div class="host-name small">{{bestHost .Hostnames}}</div>{{end}}{{if .Tags}}<div class="tags small">{{range .Tags}}<span>{{.}}</span>{{end}}</div>{{end}}</td>
+        <td class="host-os small">{{if .OS}}{{.OS}}{{else}}<span class="muted">—</span>{{end}}</td>
+        <td><div class="svc-groups">{{range .Groups}}<span class="svc-group"><span class="svc-type t-{{.Type}}">{{.Type}}</span><span class="mono">{{range $i, $p := .Ports}}{{if $i}} {{end}}{{$p}}{{end}}</span></span>{{end}}{{if .DynamicRPC}}<span class="svc-group muted small">{{.DynamicRPC}} dynamic RPC</span>{{end}}{{if not (or .Groups .DynamicRPC)}}<span class="muted">—</span>{{end}}</div></td>
+        <td class="small nowrap">{{if .Services}}<progress class="explored-bar" value="{{.Explored}}" max="{{.Services}}" title="{{.Explored}} of {{.Services}} services explored"></progress> {{.Explored}}/{{.Services}}{{else}}<span class="muted">—</span>{{end}}</td>
+        <td class="small">{{if .Owner}}{{.Owner}}{{else if not .Claims}}<span class="muted">Unclaimed</span>{{end}}{{range .Claims}}<div class="muted">{{.Label}}: {{.Owner}}</div>{{end}}</td>
+        <td><span class="prio prio-{{.Priority}}">P{{.Priority}}</span></td>
+      </tr>
+      {{else}}
+      <tr><td colspan="7" class="empty-state">No hosts match these filters. <a href="/hosts">Clear filters</a> or <a href="/import">import a scan</a>.</td></tr>
+      {{end}}
+    </table>
+  </div>
+</main>
+{{template "foot"}}
+{{end}}

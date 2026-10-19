@@ -1,0 +1,8 @@
+engagement: "engagement"
+
+in_scope:
+  - 10.0.0.0/24
+
+caution: []
+
+out_of_scope: []

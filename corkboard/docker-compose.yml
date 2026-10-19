@@ -1,0 +1,13 @@
+services:
+  cork:
+    build: .
+    image: cork:latest
+    container_name: cork
+    ports:
+      - "8443:8443"
+    volumes:
+      - cork-data:/data
+    restart: unless-stopped
+
+volumes:
+  cork-data:

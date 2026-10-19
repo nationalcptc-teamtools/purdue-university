@@ -1,0 +1,61 @@
+{{define "web"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="webpage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Web</h1><p>gowitness results. Push with screenshots: <code>cork push --screenshots DIR &lt;gowitness.jsonl&gt;</code></p></div></header>
+  <form method="get" action="/web" class="card" hx-get="/web" hx-target="#webpage" hx-select="#webpage" hx-swap="outerHTML" hx-push-url="true">
+    <div class="filter-bar">
+      <input class="search" type="search" name="q" value="{{.F.Q}}" placeholder="Search URL or title…" aria-label="Search web results">
+      <input class="short-input" type="text" name="tech" value="{{.F.Tech}}" placeholder="Technology" aria-label="Technology">
+      <select name="status" aria-label="Probe outcome">
+        <option value="">Any outcome</option>
+        <option value="ok" {{if eq .F.Status "ok"}}selected{{end}}>Loaded (2xx or 3xx)</option>
+        <option value="fail" {{if eq .F.Status "fail"}}selected{{end}}>Failed</option>
+      </select>
+      <button class="primary">Apply</button>
+      <a class="small" href="/web">Reset</a>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-caption"><h2>{{len .Matched}} URLs on known hosts</h2></div>
+    {{if or .Matched .Unmatched}}
+    <div class="web-grid">
+      {{range .Matched}}{{template "webCard" .}}{{end}}
+    </div>
+    {{if .Unmatched}}
+    <div class="table-caption unmatched-caption"><h2>Unmatched</h2><span class="muted small">{{len .Unmatched}} URLs whose host isn't in the inventory</span></div>
+    <div class="web-grid">
+      {{range .Unmatched}}{{template "webCard" .}}{{end}}
+    </div>
+    {{end}}
+    {{else}}
+    <p class="muted">No web results yet. Push gowitness output with <code>cork push --type gowitness out.jsonl</code>.</p>
+    {{end}}
+  </div>
+</main>
+{{template "foot" .}}
+{{end}}
+
+{{define "webCard"}}
+{{$u := .}}
+<a class="web-card" href="{{if $u.HostID}}/hosts/{{$u.HostIP}}{{else}}{{$u.URL}}{{end}}" title="{{$u.URL}}">
+  {{if $u.Thumb}}
+  <img loading="lazy" src="/shots/thumbs/{{$u.Thumb}}.jpg" alt="screenshot of {{$u.URL}}" width="320">
+  {{else}}
+  <div class="web-card-noshot" aria-hidden="true"><small>no screenshot</small></div>
+  {{end}}
+  <div class="web-card-body">
+    <p class="mono small web-url">{{$u.URL}}</p>
+    {{if $u.Title}}<p class="web-title">{{$u.Title}}</p>{{end}}
+    <p class="small web-meta">
+      {{if $u.Failed}}<span class="status-pill st-locked" title="{{$u.FailedReason}}">Failed</span>{{if $u.FailedReason}} <span class="muted small">{{$u.FailedReason}}</span>{{end}}
+      {{else if $u.StatusCode}}<span class="mono">{{$u.StatusCode}}</span>{{end}}
+      {{if $u.HostID}}
+        {{if $u.Owner}}<span class="muted">{{$u.Owner}}</span>{{else}}<span class="muted">Unclaimed</span>{{end}}
+      {{else}}<span class="muted">Unmatched</span>{{end}}
+      {{range $u.Technologies}}{{if .}}<span class="tech-chip">{{.}}</span>{{end}}{{end}}
+    </p>
+  </div>
+</a>
+{{end}}

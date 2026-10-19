@@ -1,0 +1,345 @@
+{{define "host"}}
+{{template "head" .}}
+{{template "nav" .}}
+{{template "sse" .}}
+<main id="hostpage" data-live tabindex="-1">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/hosts">Hosts</a> / <span class="mono">{{.D.Host.IP}}</span></nav>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+  {{if .Notice}}<div class="note" role="status">{{.Notice}}</div>{{end}}
+  <div class="card">
+    <header class="hhead" id="content">
+      <h1 class="mono">{{.D.Host.IP}}</h1>
+      {{template "statusPill" .D.Host.Status}}
+      {{if .Compromise}}<span class="status-pill st-compromised">{{statusName .Compromise.Level}} access</span>{{end}}
+      <span class="prio prio-{{.D.Host.Priority}}">P{{.D.Host.Priority}}</span>
+    </header>
+ <dl class="host-facts">
+      {{if .D.Host.Hostnames}}<div><dt>Hostname</dt><dd class="mono">{{bestHost .D.Host.Hostnames}}</dd></div>{{end}}
+      {{if .D.Host.OS}}<div><dt>OS</dt><dd>{{.D.Host.OS}} {{with .D.Host.Attrs.os_source}}<span class="muted small">({{.}})</span>{{end}}</dd></div>{{end}}
+      {{if .D.Host.Domain}}<div><dt>Domain</dt><dd class="mono">{{.D.Host.Domain}}</dd></div>{{end}}
+      <div><dt>Scope</dt><dd>{{.D.Host.Zone}}</dd></div>
+      <div><dt>Last seen</dt><dd>{{tsAgo .D.Host.LastSeen}} ago</dd></div>
+      <div><dt>Owner</dt><dd>{{if .D.Host.Owner}}{{.D.Host.Owner}} <span class="muted">claimed {{tsAgo .D.Host.ClaimedAt}} ago</span>{{else}}<span class="muted">Unclaimed</span>{{end}}</dd></div>
+    </dl>
+
+    <div class="tags">{{range .D.Host.Tags}}<span>{{.}}</span>{{end}}</div>
+
+    <div class="actions">
+      {{if eq .D.Host.Owner .User}}
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/release" hx-post="/hosts/{{.D.Host.IP}}/release" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button class="small">Release claim</button>
+      </form>
+      {{else}}
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/claim" hx-post="/hosts/{{.D.Host.IP}}/claim" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="steal" value="false">
+        <button class="small primary">Claim</button>
+      </form>
+      {{if and .D.Host.Owner (ne .D.Host.Owner .User)}}
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/claim" hx-post="/hosts/{{.D.Host.IP}}/claim" hx-confirm="Take over this host from {{.D.Host.Owner}}?" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="steal" value="true">
+        <button class="small danger">Take over from {{.D.Host.Owner}}</button>
+      </form>
+      {{end}}
+      {{end}}
+
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/priority" hx-post="/hosts/{{.D.Host.IP}}/priority" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <select name="priority" aria-label="Priority">{{range $p := list "1" "2" "3"}}<option value="{{$p}}" {{if eq $p (printf "%d" $.D.Host.Priority)}}selected{{end}}>P{{$p}}</option>{{end}}</select>
+        <button class="small">Set priority</button>
+      </form>
+
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/status" hx-post="/hosts/{{.D.Host.IP}}/status" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <select name="status" aria-label="New host status" required>
+          <option value="" disabled selected>Change status…</option>
+          <option value="untouched">Untouched</option>
+          <option value="in_progress">In progress</option>
+          <option value="done">Done</option>
+          <option value="locked">Locked</option>
+        </select>
+        <input type="text" name="reason" placeholder="Reason (needed to unlock)" aria-label="Status change reason" size="23">
+        <button class="small">Set status</button>
+      </form>
+
+      <a class="btn small" href="/findings/new?target=host:{{.D.Host.ID}}">Record finding</a>
+    </div>
+
+    <details id="owned-form" class="owned-details">
+      <summary>Record a compromise</summary>
+      <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/owned" hx-post="/hosts/{{.D.Host.IP}}/owned" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <select name="level" aria-label="Compromise level">
+          <option value="user">User access</option><option value="admin">Admin access</option><option value="system">SYSTEM</option><option value="domain_admin">Domain admin</option>
+        </select>
+        <select name="via_finding" aria-label="Related finding">
+          <option value="">Finding (optional)</option>
+          {{range .Findings}}<option value="{{.ID}}">#{{.ID}} {{.Title}}</option>{{end}}
+        </select>
+        <select name="via_cred" aria-label="Credential used">
+          <option value="">Credential (optional)</option>
+          {{range .D.Creds}}<option value="{{.ID}}">{{.Domain}}\{{.Username}} ({{.SecretType}})</option>{{end}}
+        </select>
+        <input type="text" name="via_text" placeholder="How was access obtained?" aria-label="Compromise description" size="30">
+        <button class="small danger">Record compromise</button>
+      </form>
+    </details>
+
+    {{if .D.Host.Attrs.unlocked_by}}
+    <p class="muted small">Unlocked: {{index .D.Host.Attrs "unlocked_by"}}</p>
+    {{end}}
+  </div>
+
+  {{if .D.Services}}
+  {{$ip := .D.Host.IP}}{{$csrf := .CSRF}}{{$user := .User}}
+  <div class="card table-card">
+    <div class="table-caption"><h2>Services</h2><span class="muted small">{{exploredCount .D.Services}} explored</span></div>
+    <table class="svc-table">
+      <tr><th>Port</th><th>Type</th><th>Service</th><th>Claimed by</th><th>Explored</th><th></th></tr>
+      {{range .D.Services}}{{if not (isDynamicRPC .)}}{{$owner := serviceOwner $.D.Host.Claims .ID}}
+      <tr class="{{if .ExploredAt}}svc-explored{{end}}" id="svc-{{.ID}}">
+        <td class="mono svc-port">{{.Port}}/{{.Proto}}{{if ne .State "open"}}<div class="muted small">{{.State}}</div>{{end}}</td>
+        <td><span class="svc-type t-{{.Type}}">{{.Type}}</span></td>
+        <td class="svc-desc">
+          <div>{{.Name}}{{if eq .Method "table"}} <span class="muted small" title="nmap guessed this from the port number">guess</span>{{end}}{{with .Product}} <span class="muted">{{.}}</span>{{end}}{{with .Version}} <span class="muted">{{.}}</span>{{end}}</div>
+          {{range tasksFor $.Tasks .ID}}<div class="svc-task small"><a href="#tasks"><span class="prio prio-{{.Priority}}">P{{.Priority}}</span> {{.Title}}</a>{{with .Owner}} <span class="muted">{{.}}</span>{{end}}</div>{{end}}
+          {{with latestLog $.D.Notes .ID}}<a class="svc-log" href="#log-{{.ID}}">
+            <span class="svc-log-text">{{if .Outcome}}<span class="outcome o-{{.Outcome}}">{{.Outcome}}</span> {{end}}<strong>{{.Author}}</strong> {{.Body}}</span>
+            {{with .Command}}<code class="term-line"><span class="prompt">$</span> {{.}}</code>{{end}}
+          </a>{{end}}
+          {{if .Scripts}}<details class="more"><summary>{{len .Scripts}} script{{if ne (len .Scripts) 1}}s{{end}}</summary>{{range .Scripts}}<pre>{{.ID}}: {{.Output}}</pre>{{end}}</details>{{end}}
+        </td>
+        <td class="nowrap">
+          <form class="inline" method="post" action="/hosts/{{$ip}}/services/{{.ID}}/claim" hx-post="/hosts/{{$ip}}/services/{{.ID}}/claim" hx-headers='{"X-CSRF-Token":"{{$csrf}}"}'{{if and $owner (ne $owner $user)}} hx-confirm="Take over {{.Port}}/{{.Proto}} from {{$owner}}?"{{end}}>
+            <input type="hidden" name="csrf" value="{{$csrf}}">
+            <span class="row-control">
+            {{if not $owner}}<span class="muted small">—</span><input type="hidden" name="action" value="claim"><button class="small">Claim</button>
+            {{else if eq $owner $user}}<span class="owner-chip mine">you</span><input type="hidden" name="action" value="release"><button class="small">Release</button>
+            {{else}}<span class="owner-chip">{{$owner}}</span><input type="hidden" name="action" value="steal"><button class="small danger">Take over</button>{{end}}
+            </span>
+          </form>
+        </td>
+        <td class="nowrap">
+          <form class="inline" method="post" action="/hosts/{{$ip}}/services/{{.ID}}/explored" hx-post="/hosts/{{$ip}}/services/{{.ID}}/explored" hx-headers='{"X-CSRF-Token":"{{$csrf}}"}'>
+            <input type="hidden" name="csrf" value="{{$csrf}}">
+            <span class="row-control">
+            {{if .ExploredAt}}<span class="owner-chip explored-mark" title="{{stamp (deref .ExploredAt)}}">✓ {{.ExploredBy}}</span><input type="hidden" name="explored" value="0"><button class="small">Reopen</button>
+            {{else}}<input type="hidden" name="explored" value="1"><button class="small">Mark explored</button>{{end}}
+            </span>
+          </form>
+        </td>
+        <td class="right small nowrap svc-links"><a href="?log={{.ID}}#log">Log{{with logCount $.D.Notes .ID}} ({{.}}){{end}}</a> <a href="/findings/new?target=service:{{.ID}}">Finding</a></td>
+      </tr>
+      {{end}}{{end}}
+      {{with dynamicRPC .D.Services}}<tr><td colspan="6"><details class="more"><summary>{{len .}} dynamic RPC port{{if ne (len .) 1}}s{{end}} (49152+)</summary><span class="mono small">{{range $i, $s := .}}{{if $i}}, {{end}}{{$s.Port}}{{end}}</span></details></td></tr>{{end}}
+    </table>
+  </div>
+  {{end}}
+
+  <div class="card" id="tasks">
+    <h2>Tasks</h2>
+    {{if .Tasks}}
+    <table>
+      <tr><th>Priority</th><th>State</th><th>Task</th><th>Service</th><th>Owner</th><th></th></tr>
+      {{range .Tasks}}
+      <tr>
+        <td><span class="prio prio-{{.Priority}}">P{{.Priority}}</span></td>
+        <td class="small">{{statusName .State}}</td>
+        <td>{{.Title}}</td>
+        <td class="small">{{if .ServiceID}}<a class="mono" href="#svc-{{deref .ServiceID}}">{{.Service}}</a>{{else}}<span class="muted">whole host</span>{{end}}</td>
+        <td class="small">{{.Owner}}</td>
+        <td class="right small">
+          {{if eq .State "open"}}
+          <form class="inline" method="post" action="/tasks/{{.ID}}/claim" hx-post="/tasks/{{.ID}}/claim" hx-headers='{"X-CSRF-Token":"{{$.CSRF}}"}'>
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="steal" value="false">
+            <button class="small">Claim</button>
+          </form>
+          {{else if eq .State "claimed"}}
+          <form class="inline" method="post" action="/tasks/{{.ID}}/done" hx-post="/tasks/{{.ID}}/done" hx-headers='{"X-CSRF-Token":"{{$.CSRF}}"}'>
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="note" value="">
+            <button class="small">Done</button>
+          </form>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}<p class="muted">No tasks for this host.</p>{{end}}
+    <details class="form-card host-form">
+      <summary>New task for this host</summary>
+      <form class="form-grid" method="post" action="/tasks">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input type="hidden" name="ip" value="{{.D.Host.IP}}">
+        <input type="hidden" name="from" value="host">
+        <label class="field wide">Title
+          <input type="text" name="title" maxlength="200" required>
+        </label>
+        <label class="field">Service
+          <select name="service"><option value="">Whole host</option>{{range .D.Services}}{{if not (isDynamicRPC .)}}<option value="{{.ID}}">{{.Port}}/{{.Proto}} {{.Type}}{{with .Name}} ({{.}}){{end}}</option>{{end}}{{end}}</select>
+        </label>
+        <label class="field">Priority
+          <select name="priority">{{range $p := (list "1" "2" "3" "4" "5")}}<option value="{{$p}}" {{if eq $p "3"}}selected{{end}}>P{{$p}}</option>{{end}}</select>
+        </label>
+        <div class="field form-submit"><button class="primary">Create task</button></div>
+      </form>
+    </details>
+  </div>
+
+  <div class="card" id="log">
+    <h2>Log</h2>
+    <form class="log-add" method="post" action="/hosts/{{.D.Host.IP}}/notes" hx-post="/hosts/{{.D.Host.IP}}/notes" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}' autocomplete="off">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <div class="log-line">
+        <select name="service" aria-label="What this entry is about">
+          <option value="">Whole host</option>
+          {{range .D.Services}}{{if not (isDynamicRPC .)}}<option value="{{.ID}}"{{if eq .ID $.LogService}} selected{{end}}>{{.Port}}/{{.Proto}} {{.Type}}</option>{{end}}{{end}}
+        </select>
+        <input type="text" name="body" required maxlength="8192" aria-label="Log entry" placeholder="What you tried, found, or need someone to pick up"{{if .LogService}} autofocus{{end}}>
+        <button class="primary">Add to log</button>
+      </div>
+      <details class="log-more">
+        <summary>Outcome, command and output</summary>
+        <div class="log-more-fields">
+          <fieldset class="log-outcome"><legend>Outcome</legend>
+            <label><input type="radio" name="outcome" value="" checked> Not set</label>
+            <label><input type="radio" name="outcome" value="worked"> Worked</label>
+            <label><input type="radio" name="outcome" value="failed"> Failed</label>
+          </fieldset>
+          <label class="field">Command
+            <input type="text" name="command" class="term-input" maxlength="8192" placeholder="nxc smb {{.D.Host.IP}} -u '' -p ''">
+          </label>
+          <label class="field">Output
+            <textarea name="output" class="term-input" rows="5" maxlength="8192" placeholder="Paste what came back"></textarea>
+          </label>
+        </div>
+      </details>
+    </form>
+    {{if .D.Notes}}
+    <ol class="log-list">
+      {{range .D.Notes}}
+      <li class="log-entry" id="log-{{.ID}}">
+        <div class="log-meta">
+          <strong>{{.Author}}</strong>
+          <span class="muted" title="{{stamp .CreatedAt}}">{{tsAgo .CreatedAt}} ago</span>
+          {{if .ServiceID}}<a class="log-svc mono" href="#svc-{{deref .ServiceID}}">{{.Service}}</a>{{else}}<span class="log-svc muted">host</span>{{end}}
+          {{if .Outcome}}<span class="outcome o-{{.Outcome}}">{{.Outcome}}</span>{{end}}
+        </div>
+        <div class="log-body">{{.Body}}</div>
+        {{if or .Command .Output}}<div class="term">{{with .Command}}<div class="term-cmd"><span class="prompt">$</span> {{.}}</div>{{end}}{{with .Output}}<pre>{{.}}</pre>{{end}}</div>{{end}}
+      </li>
+      {{end}}
+    </ol>
+    {{else}}<p class="muted">Nothing logged yet. Log what you ran and what came back so nobody repeats it.</p>{{end}}
+  </div>
+
+  {{if .D.OSEvidence}}
+  <details class="card"><summary>OS evidence and alternative observations</summary>
+    {{range .D.OSEvidence}}<div class="ev">{{.Name}} <span class="muted small">{{.Family}}, from {{.Source}}, accuracy {{.Accuracy}}, {{tsAgo .At}} ago</span></div>{{end}}
+  </details>
+  {{end}}
+  {{if .D.ScanHistory}}
+  <details class="card"><summary>Scan evidence and source viewpoints</summary>
+    {{range .D.ScanHistory}}<details><summary>Run {{.RunID}}: {{.Run.Kind}} from {{if .Vantage}}{{.Vantage}}{{else}}an unknown source{{end}}, {{.Run.Exit}}</summary>
+      <pre>{{.Run.Command}}</pre>
+      {{with .Host.Scan}}<p>Responded: {{.Responded}}. Timed out: {{.TimedOut}}. Reason: {{.Reason}}.</p>
+      {{range .Ports}}<div class="small mono">{{.Port}}/{{.Proto}} {{.State}} ({{.Reason}})</div>{{end}}
+      {{range .Extra}}<div class="small mono">{{.Count}} aggregate ports: {{.State}} {{.Ports}}</div>{{end}}{{end}}
+    </details>{{end}}
+  </details>
+  {{end}}
+
+  {{if .D.HostScripts}}
+  <div class="card">
+    <h2>Host scripts</h2>
+    {{range .D.HostScripts}}
+    <details><summary class="mono">{{.ID}}</summary><pre>{{.Output}}</pre></details>
+    {{end}}
+  </div>
+  {{end}}
+
+
+  {{if .D.Web}}
+  <div class="card">
+    <h2>Web</h2>
+    {{range .D.Web}}
+    <div class="host-web">
+      {{if .Thumb}}<a href="/shots/{{.Screenshot}}.jpg" target="_blank" rel="noopener" title="Full screenshot"><img loading="lazy" src="/shots/thumbs/{{.Thumb}}.jpg" alt="screenshot of {{.URL}}" width="240"></a>{{else}}<div class="web-card-noshot" aria-hidden="true"><small>no screenshot</small></div>{{end}}
+      <div class="small">
+        <div><span class="mono">{{.StatusCode}}</span> <a class="mono" href="{{.URL}}" target="_blank" rel="noopener">{{.URL}}</a></div>
+        {{if .Title}}<div class="web-inline-title">{{.Title}}</div>{{end}}
+        {{if .Technologies}}<div class="muted">{{range $i, $t := .Technologies}}{{if $i}}, {{end}}{{$t}}{{end}}</div>{{end}}
+        {{if .TLSSubject}}<div class="muted">TLS: {{.TLSSubject}}</div>{{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="card">
+      <h2>Working credentials</h2>
+      {{if .D.Creds}}
+      <table>
+        <tr><th>Account</th><th>Access</th><th>Type</th><th class="right">Secret</th></tr>
+        {{range .D.Creds}}
+        <tr>
+          <td><span class="mono">{{.Username}}</span>{{if .Domain}}<div class="muted small mono">{{.Domain}}</div>{{end}}</td>
+          <td class="small nowrap">{{range $i, $a := .Access}}{{if $i}}, {{end}}<span class="{{if eq $a.Level "admin"}}lvl-admin{{end}}">{{$a.Level}}</span> via {{$a.Protocol}}{{end}}</td>
+          <td class="small muted">{{.SecretType}}</td>
+          <td class="secret-cell"><code class="secret">{{.Secret}}</code><button type="button" class="small copy" data-copy="{{.Secret}}">Copy</button></td>
+        </tr>
+        {{end}}
+      </table>
+      {{else}}<p class="muted">No credentials recorded for this host.</p>{{end}}
+  </div>
+
+  {{if .D.Shares}}
+    <div class="card">
+      <h2>SMB shares</h2>
+      <table>
+        <tr><th>Share</th><th>Access</th><th>Found with</th></tr>
+        {{range .D.Shares}}
+        <tr>
+          <td class="mono small">\\{{.Name}}</td>
+          <td class="small">{{if and .CanRead .CanWrite}}Read, write{{else if .CanWrite}}Write{{else if .CanRead}}Read{{end}}</td>
+          <td class="small mono">{{if .CredID}}cred #{{.CredID}}{{end}}</td>
+        </tr>
+        {{end}}
+      </table>
+    </div>
+  {{end}}
+
+  {{if .Findings}}
+  <div class="card">
+    <h2 class="section-heading">Findings <a href="/findings">All findings</a></h2>
+    {{range .Findings}}
+    <div class="ev"><span class="status-pill st-{{.State}}">{{.State}}</span> {{.Title}} <span class="muted small">{{.Source}}</span></div>
+    {{end}}
+  </div>
+  {{end}}
+
+
+  <div class="card">
+    <h2>Tags</h2>
+    <div class="tags">{{range .D.Host.Tags}}<span>{{.}}</span>{{end}}</div>
+    <form class="inline" method="post" action="/hosts/{{.D.Host.IP}}/tags" hx-post="/hosts/{{.D.Host.IP}}/tags" hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'>
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="text" name="add" placeholder="New tag" aria-label="Tag to add" size="12">
+      <select name="remove" aria-label="Tag to remove">
+        <option value="">Remove a tag…</option>
+        {{range .D.Host.Tags}}<option value="{{.}}">{{.}}</option>{{end}}
+      </select>
+      <button class="small">Save tags</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Timeline</h2>
+    <div class="feed">{{range .Events}}{{template "eventRow" .}}{{end}}</div>
+  </div>
+</main>
+{{template "foot"}}
+{{end}}

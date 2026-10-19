@@ -1,0 +1,57 @@
+{{define "import"}}
+{{template "head" .}}
+{{template "nav" .}}
+<main id="importpage" tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Import</h1><p>Uploads get the same scope checks as <code>cork push</code>.</p></div></header>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+  {{if .Notice}}<div class="note" role="status">{{.Notice}}</div>{{end}}
+  <div class="grid c2">
+    <section class="card">
+      <h2>Upload a file</h2>
+      <form class="form-grid" method="post" action="/import" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label class="field wide">File
+          <input type="file" name="file" required>
+        </label>
+        <label class="field">Type
+          <select name="type">
+            <option value="auto" {{if eq .Type "auto"}}selected{{end}}>Detect automatically</option>
+            <option value="nmap" {{if eq .Type "nmap"}}selected{{end}}>Nmap / masscan XML</option>
+            <option value="nxc" {{if eq .Type "nxc"}}selected{{end}}>NetExec protocol DB</option>
+          </select>
+        </label>
+        <div class="field form-submit"><button class="primary">Import</button></div>
+      </form>
+    </section>
+    <section class="card">
+      <h2>What you can upload</h2>
+      <p class="small"><strong>Nmap or masscan XML</strong> from <code>-oX</code> or <code>-oA</code>. Hosts, services, and hostnames are merged into the inventory.</p>
+      <p class="small"><strong>NetExec protocol DBs</strong> such as <code>smb.db</code> or <code>ldap.db</code> from <code>~/.nxc/workspaces/&lt;workspace&gt;/</code>. Keep the original file name; it identifies the protocol. Credentials and access are imported.</p>
+      <p class="muted small">Re-uploading the same file is a no-op. Out-of-scope hosts are flagged and raise the scope alarm.</p>
+    </section>
+  </div>
+  {{with .Result}}
+  <section class="card">
+    <h2>Imported <span class="mono">{{.File}}</span> <span class="muted small">{{.Kind}}</span></h2>
+    {{if .Duplicate}}
+    <p class="muted">Already imported as run {{.RunID}}.</p>
+    {{else}}
+    <div class="stat-row">
+      <div><strong>{{.NewHosts}}</strong><span class="muted small">new hosts</span></div>
+      <div><strong>{{.UpdatedHosts}}</strong><span class="muted small">updated hosts</span></div>
+      <div><strong>{{.NewServices}}</strong><span class="muted small">new services</span></div>
+      <div><strong>{{.NewCreds}}</strong><span class="muted small">new credentials</span></div>
+    </div>
+    <p class="small result-links"><a href="/hosts">Hosts</a></p>
+    {{end}}
+    {{if .OutOfScope}}<div class="note err" role="alert"><strong>Out of scope:</strong> <span class="mono">{{range $i, $ip := .OutOfScope}}{{if $i}}, {{end}}{{$ip}}{{end}}</span></div>{{end}}
+    {{if .Warnings}}
+    <details><summary class="small">{{len .Warnings}} warnings</summary>
+      <ul class="small">{{range .Warnings}}<li>{{.}}</li>{{end}}</ul>
+    </details>
+    {{end}}
+  </section>
+  {{end}}
+</main>
+{{template "foot"}}
+{{end}}

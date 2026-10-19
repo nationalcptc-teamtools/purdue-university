@@ -1,0 +1,32 @@
+{{define "activity"}}
+{{template "head" .}}
+{{template "nav" .}}
+{{template "sse" .}}
+<main id="actpage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Activity</h1></div></header>
+  <div class="card">
+    <form class="filter-bar" method="get" action="/activity" hx-get="/activity" hx-target="#actpage" hx-select="#actpage" hx-swap="outerHTML" hx-push-url="true">
+      <select name="kind" aria-label="Event kind">
+        <option value="">All events</option>
+        {{range .Kinds}}<option value="{{.}}" {{if eq $.Kind .}}selected{{end}}>{{statusName .}}</option>{{end}}
+      </select>
+      <input type="text" name="host" value="{{.HostQ}}" placeholder="Filter by host IP" aria-label="Host IP" size="20">
+      <button class="primary">Apply</button>
+      <a class="small" href="/activity">Reset</a>
+    </form>
+    <div class="feed" id="feed">
+      {{range .Events}}
+      <div class="ev">
+        <span class="t">{{tsAgo .At}} ago, {{.Actor}}</span>
+        <span class="k">{{statusName .Kind}}</span>
+        {{.Summary}}
+        {{if .HostIP}} <a class="mono small" href="/hosts/{{.HostIP}}">{{.HostIP}}</a>{{end}}
+      </div>
+      {{else}}
+      <p class="empty-state">No events match. <a href="/activity">Clear filters</a></p>
+      {{end}}
+    </div>
+  </div>
+</main>
+{{template "foot"}}
+{{end}}

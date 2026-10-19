@@ -1,0 +1,21 @@
+{{define "archive"}}
+{{template "head" .}}{{template "nav" .}}
+<main id="content">
+<header class="page-header"><h1>Engagement archive</h1></header>
+<section class="panel">
+<h2>Export a complete snapshot</h2>
+<p>Download the engagement database, screenshot originals, active scope, and readable exports. The archive includes stored credentials.</p>
+<form method="post" action="/archive/export"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Download snapshot</button></form>
+</section>
+<section class="panel">
+<h2>Inspect an archive</h2>
+<p>Verify completeness, file hashes, database integrity, and compatibility. Inspection returns metadata without revealing credentials.</p>
+<form method="post" enctype="multipart/form-data" action="/archive/inspect?csrf={{.CSRF}}"><label>Snapshot file <input type="file" name="file" accept=".zip" required></label><button>Verify archive</button></form>
+</section>
+<section class="panel"><h2>Restore on a separate machine</h2>
+<p>Use a fresh directory. Restore asks for a new team passphrase; integrations start disabled.</p>
+<pre>cork archive restore assessment.cork.zip --data ./offboard-data
+cork serve --data ./offboard-data</pre>
+</section>
+</main>{{template "foot" .}}
+{{end}}

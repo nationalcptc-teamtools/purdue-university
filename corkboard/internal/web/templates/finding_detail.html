@@ -1,0 +1,74 @@
+{{define "findingDetail"}}{{template "head" .}}{{template "nav" .}}
+<main id="content">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/findings">Findings</a> / {{if .D}}#{{.D.ID}}{{else}}New{{end}}</nav>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+  {{if .D}}
+  <div class="card">
+    <header class="hhead"><h1>{{.D.Title}}</h1><span class="status-pill sev-{{.D.Severity}}">{{.D.Severity}}</span><span class="status-pill st-{{.D.State}}">{{.D.State}}</span></header>
+    <dl class="host-facts">
+      <div><dt>Source</dt><dd>{{.D.Source}}</dd></div>
+      <div><dt>Created</dt><dd>{{stamp .D.CreatedAt}}</dd></div>
+      <div><dt>Updated</dt><dd>{{stamp .D.UpdatedAt}}</dd></div>
+      {{with .D.ReportRef}}<div><dt>Report ref</dt><dd>{{.}}</dd></div>{{end}}
+    </dl>
+    {{with .D.MergedInto}}<div class="note">Merged into <a href="/findings/{{.}}">finding #{{.}}</a>. Its history is kept here.</div>{{end}}
+    {{if .D.ReportUpdate}}<div class="note">New affected assets since it was reported. Update the report.</div>{{end}}
+    {{with .D.Description}}<p>{{.}}</p>{{end}}
+  </div>
+  <div class="work-layout">
+    <section>
+      <div class="card">
+        <h2>Affected assets</h2>
+        {{range .D.Assets}}<div class="asset"><a class="mono" href="/work?target={{.Kind}}:{{.RefID}}">{{.Label}}</a>{{if .NeedsReview}} <span class="status-pill oc-blocked">needs review</span>{{end}}{{with .Evidence}}<pre>{{.}}</pre>{{end}}</div>{{end}}
+        {{range .ExtraHosts}}<div class="asset"><a class="mono" href="/hosts/{{.IP}}">{{.IP}}</a>{{with .Evidence}}<pre>{{.}}</pre>{{end}}</div>{{end}}
+        {{if not (or .D.Assets .ExtraHosts)}}<p class="muted">None.</p>{{end}}
+      </div>
+      <div class="card">
+        <h2>Evidence</h2>
+        {{range .D.Evidence}}<p class="small">{{if .ExternalRef}}<span class="mono">{{.ExternalRef}}</span>{{if .Caption}}, {{.Caption}}{{end}}{{else}}<a href="/evidence/{{.ID}}">{{if .Caption}}{{.Caption}}{{else}}Evidence {{.ID}}{{end}}</a>{{end}} <span class="muted">by {{.Actor}}</span></p>{{else}}<p class="muted small">None yet.</p>{{end}}
+        <details class="more"><summary>Attach evidence</summary>
+          <form class="form-grid" method="post" enctype="multipart/form-data" action="/evidence"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="finding_id" value="{{.D.ID}}">
+            <label class="field wide"><span>File <span class="hint">PNG, JPEG, or UTF-8 text</span></span><input name="file" type="file" accept=".png,.jpg,.jpeg,.txt"></label>
+            <label class="field wide"><span>Or a reference <span class="hint">e.g. a share path</span></span><input name="external_ref"></label>
+            <label class="field wide">Caption <input name="caption" maxlength="2048"></label>
+            <div class="field form-submit"><button>Attach</button></div>
+          </form>
+        </details>
+      </div>
+      <div class="card">
+        <h2>History</h2>
+        {{range .D.History}}<div class="hist"><p class="small"><strong>{{.Actor}}</strong> {{.Action}} <span class="muted">{{stamp .RecordedAt}}</span></p>{{with historyLines .Detail}}<ul class="small muted">{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}</div>{{end}}
+      </div>
+    </section>
+    <aside>{{template "findingForm" .}}</aside>
+  </div>
+  {{else}}
+  <header class="page-heading"><div><h1>Record finding</h1></div></header>
+  {{template "findingForm" .}}
+  {{end}}
+</main>{{template "foot" .}}{{end}}
+
+{{define "findingForm"}}
+<form class="card form-card" method="post" action="{{if .D}}/findings/{{.D.ID}}{{else}}/findings/new{{end}}">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <h2>{{if .D}}Edit{{else}}Details{{end}}</h2>
+  {{$sev := "medium"}}{{$state := "candidate"}}{{if .D}}{{$sev = .D.Severity}}{{$state = .D.State}}{{end}}
+  <div class="form-grid">
+    <label class="field wide">Title <input name="title" maxlength="512" required value="{{if .D}}{{.D.Title}}{{end}}"></label>
+    <label class="field">Severity <select name="severity">{{range list "info" "low" "medium" "high" "critical"}}<option {{if eq . $sev}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+    <label class="field">State <select name="state">{{range list "candidate" "confirmed" "rejected" "reported"}}{{if or $.D (eq . "candidate") (eq . "confirmed")}}<option {{if eq . $state}}selected{{end}}>{{.}}</option>{{end}}{{end}}</select></label>
+    {{if .D}}<label class="field wide"><span>Reason <span class="hint">required to reject</span></span><input name="reason"></label>{{end}}
+    <label class="field wide"><span>Description <span class="hint">optional</span></span><textarea name="description" rows="3" maxlength="65536">{{if .D}}{{.D.Description}}{{end}}</textarea></label>
+    <label class="field wide"><span>{{if .D}}Add affected assets{{else}}Affected assets{{end}} <span class="hint">ctrl/cmd-click for several</span></span><select name="targets" multiple size="6" {{if not .D}}required{{end}}>{{range .Options}}<option value="{{.Value}}" {{if eq .Value $.Target}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+    <label class="field wide"><span>Evidence excerpt <span class="hint">optional, 2 KiB</span></span><textarea name="evidence" rows="2" maxlength="2048"></textarea></label>
+    {{if .D}}<details class="field wide more"><summary>Report reference, remove assets, merge</summary>
+      <div class="form-grid">
+        <label class="field">Report reference <input name="report_ref" value="{{.D.ReportRef}}"></label>
+        <label class="field"><span>Merge into finding # <span class="hint">this one becomes an alias</span></span><input name="merge_into" type="number" min="1"></label>
+        {{if .D.Assets}}<fieldset class="field wide"><legend>Remove affected assets</legend>{{range .D.Assets}}<label class="small"><input type="checkbox" name="remove_targets" value="{{.Kind}}:{{.RefID}}"> {{.Label}}</label>{{end}}</fieldset>{{end}}
+      </div>
+    </details>{{end}}
+    <div class="field form-submit"><button class="primary">{{if .D}}Save{{else}}Record finding{{end}}</button></div>
+  </div>
+</form>
+{{end}}

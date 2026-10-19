@@ -1,7 +1,0 @@
-tls_allowlist:
-  - host: host.docker.internal
-    permissions: null
-    suffix: null
-  - host: nginx
-    permissions: null
-    suffix: null

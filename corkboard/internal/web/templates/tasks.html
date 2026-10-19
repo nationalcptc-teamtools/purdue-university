@@ -1,0 +1,80 @@
+{{define "tasks"}}
+{{template "head" .}}
+{{template "nav" .}}
+{{template "sse" .}}
+<main id="taskspage" data-live tabindex="-1">
+  <header class="page-heading" id="content"><div><h1>Tasks</h1></div><a class="btn" href="/tasks?mine=on">My tasks</a></header>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+  {{if .Notice}}<div class="note" role="status">{{.Notice}}</div>{{end}}
+  <details class="card form-card" id="new-task" {{if .NewTaskOpen}}open{{end}}>
+    <summary>New task</summary>
+    <form class="form-grid" method="post" action="/tasks">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label class="field">Host IP
+        <input type="text" name="ip" value="{{.NewTask.IP}}" list="task-host-ips" placeholder="10.0.0.10" autocomplete="off" required>
+      </label>
+      <label class="field"><span>Port <span class="hint">optional, e.g. 445 or 161/udp</span></span>
+        <input type="text" name="port" value="{{.NewTask.Port}}" placeholder="whole host" autocomplete="off" size="10">
+      </label>
+      <label class="field">Priority
+        <select name="priority">
+          {{range $p := (list "1" "2" "3" "4" "5")}}<option value="{{$p}}" {{if eq $p $.NewTask.Priority}}selected{{end}}>P{{$p}}{{if eq $p "1"}} (highest){{else if eq $p "5"}} (lowest){{end}}</option>{{end}}
+        </select>
+      </label>
+      <label class="field wide">Title
+        <input type="text" name="title" value="{{.NewTask.Title}}" maxlength="200" placeholder="e.g. Kerberoast service accounts" required>
+      </label>
+      <label class="field wide"><span>Details <span class="hint">optional</span></span>
+        <textarea name="body" rows="2">{{.NewTask.Body}}</textarea>
+      </label>
+      <label class="field wide"><span>Commands <span class="hint">optional, one per line</span></span>
+        <textarea name="commands" rows="2" class="mono" spellcheck="false">{{.NewTask.Commands}}</textarea>
+      </label>
+      <div class="field form-submit"><button class="primary">Create task</button></div>
+    </form>
+    <datalist id="task-host-ips">{{range .HostIPs}}<option value="{{.}}">{{end}}</datalist>
+  </details>
+  <form method="get" action="/tasks" class="card" hx-get="/tasks" hx-target="#taskspage" hx-select="#taskspage" hx-swap="outerHTML" hx-push-url="true">
+    <div class="filter-bar">
+      <label class="f"><input type="checkbox" name="mine" {{if .F.Mine}}checked{{end}}> Only mine</label>
+      <label class="f">Priority
+        <select name="prio">
+          <option value="" {{if not .F.PrioMax}}selected{{end}}>Any</option>
+          <option value="1" {{if eq .F.PrioMax "1"}}selected{{end}}>P1 only</option>
+          <option value="2" {{if eq .F.PrioMax "2"}}selected{{end}}>P2 and up</option>
+          <option value="3" {{if eq .F.PrioMax "3"}}selected{{end}}>P3 and up</option>
+          <option value="4" {{if eq .F.PrioMax "4"}}selected{{end}}>P4 and up</option>
+        </select>
+      </label>
+      <label class="f">Host tag <input type="text" name="hosttag" value="{{.F.HostTag}}" size="10"></label>
+      <button class="primary">Apply</button>
+      <a class="small" href="/tasks">Reset</a>
+    </div>
+  </form>
+
+  <div class="kanban">
+    <div class="kcol">
+      <h3>Open <span class="kcount">{{len .Open}}</span></h3>
+      {{range .Open}}{{template "taskCard" (cardit . $.CSRF $.User)}}{{else}}<p class="muted small">Nothing waiting.</p>{{end}}
+    </div>
+    <div class="kcol">
+      <h3>Claimed <span class="kcount">{{len .Claimed}}</span></h3>
+      {{range .Claimed}}{{template "taskCard" (cardit . $.CSRF $.User)}}{{else}}<p class="muted small">Nobody is working a task.</p>{{end}}
+    </div>
+    <div class="kcol">
+      <h3>Blocked <span class="kcount">{{len .Blocked}}</span></h3>
+      {{range .Blocked}}{{template "taskCard" (cardit . $.CSRF $.User)}}{{else}}<p class="muted small">Nothing blocked.</p>{{end}}
+    </div>
+    <div class="kcol">
+      <details><summary><h3>Recently closed <span class="kcount">{{len .Closed}}</span></h3></summary>
+      {{range .Closed}}
+      <div class="tcard"><div class="t"><span class="prio prio-{{.Priority}}">P{{.Priority}}</span> {{if .HostIP}}<a href="/hosts/{{.HostIP}}#tasks">{{.Title}}</a>{{else}}{{.Title}}{{end}}</div>
+      <div class="m"><span>{{statusName .State}}</span>{{if .Owner}}<span>{{.Owner}}</span>{{end}}<span>{{tsAgo .UpdatedAt}} ago</span></div>
+      {{if .ClosedNote}}<div class="m muted">{{.ClosedNote}}</div>{{end}}</div>
+      {{else}}<p class="muted small">Nothing closed yet.</p>{{end}}
+      </details>
+    </div>
+  </div>
+</main>
+{{template "foot"}}
+{{end}}

@@ -1,0 +1,96 @@
+{{define "checks"}}{{template "head" .}}{{template "nav" .}}
+<main id="content">
+  <header class="page-heading"><div><h1>Credential checks</h1><p>Which credentials have been tried where. Record checks you run yourself; nothing here runs automatically.</p></div></header>
+  {{if .Err}}<div class="note err" role="alert">{{.Err}}</div>{{end}}
+
+  <form class="card" method="get" action="/checks">
+    <div class="form-grid">
+      <label class="field">Credential <select name="cred_id"><option value="">All</option>{{range .Profiles}}<option value="{{.CredID}}" {{if eq (printf "%d" .CredID) $.CredID}}selected{{end}}>{{.Identity}} ({{.SecretType}})</option>{{end}}</select></label>
+      <label class="field">State <select name="state"><option value="">All</option>{{range list "pending" "claimed" "blocked" "completed" "waived"}}<option {{if eq . $.State}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+      <label class="field">Applies? <select name="applicability"><option value="">All</option>{{range list "eligible" "unknown"}}<option {{if eq . $.Applicability}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+      <label class="field"><span>Vantage <span class="hint">* all, blank unknown</span></span><input name="vantage" value="{{.Vantage}}"></label>
+      <input type="hidden" name="target" value="{{.Target}}">
+      <div class="field form-submit"><button class="primary">Filter</button></div>
+    </div>
+  </form>
+
+  <p class="small muted">{{.Checks.Summary.Checked}} of {{.Checks.Summary.Known}} applicable checks tested, {{.Checks.Summary.Pending}} to do, {{.Checks.Summary.Waived}} waived, {{.Checks.Summary.Unknown}} need a yes/no on whether they apply.</p>
+
+  {{range .Checks.Rows}}
+  <article class="card check">
+    <header class="attempt-head">
+      <strong>{{.Identity}}</strong> on <a class="mono" href="/work?target={{.Target.Kind}}:{{.Target.ID}}">{{.Label}}</a>
+      <span class="status-pill">{{.Protocol}}</span>
+      <span class="status-pill {{if eq .State "completed"}}oc-successful{{else if eq .State "blocked"}}oc-blocked{{else}}oc-inconclusive{{end}}">{{.State}}{{if .Owner}}: {{.Owner}}{{end}}</span>
+      {{if .CurrentResult}}<span class="status-pill {{if eq .CurrentResult "admin" "valid"}}oc-successful{{else if eq .CurrentResult "invalid"}}oc-unsuccessful{{end}}">{{.CurrentResult}}</span>{{end}}
+    </header>
+    <p class="small muted">From {{if .Vantage}}{{.Vantage}}{{else}}unknown vantage{{end}}{{with .Reason}}, {{.}}{{end}}{{with .CurrentRecordedAt}}, result recorded {{stamp .}}{{end}}. <a href="/checks?cred_id={{.CredID}}&amp;endpoint_id={{.EndpointID}}">History</a></p>
+
+    {{if eq .Applicability "unknown"}}
+    <form class="form-grid" method="post" action="/checks"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="cred_id" value="{{.CredID}}"><input type="hidden" name="endpoint_id" value="{{.EndpointID}}"><input type="hidden" name="generation" value="{{.Generation}}"><input type="hidden" name="action" value="applicability">
+      <label class="field">Applies here? <select name="decision"><option value="eligible">Yes, check it</option><option value="excluded">No, skip it</option></select></label>
+      <label class="field">Why <input name="reason" required></label>
+      <div class="field form-submit"><button>Save</button></div>
+    </form>
+    {{else}}
+    <div class="check-actions">
+      <form class="form-grid" method="post" action="/checks"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="cred_id" value="{{.CredID}}"><input type="hidden" name="endpoint_id" value="{{.EndpointID}}"><input type="hidden" name="generation" value="{{.Generation}}"><input type="hidden" name="action" value="result">
+        <label class="field">Result <select name="result"><option>valid</option><option>admin</option><option>invalid</option><option>inconclusive</option></select></label>
+        <label class="field"><span>Detail <span class="hint">optional</span></span><input name="detail" maxlength="8192"></label>
+        <div class="field form-submit"><button class="primary">Record result</button></div>
+        <details class="field wide more"><summary>More</summary>
+          <div class="form-grid">
+            <label class="field"><span>When <span class="hint">RFC3339</span></span><input name="occurred_at"></label>
+            <label class="field small"><span><input name="confirmed_loss" type="checkbox"> Access confirmed lost</span></label>
+          </div>
+        </details>
+      </form>
+      <form class="form-grid" method="post" action="/checks"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="cred_id" value="{{.CredID}}"><input type="hidden" name="endpoint_id" value="{{.EndpointID}}"><input type="hidden" name="generation" value="{{.Generation}}">
+        <label class="field">Work <select name="action"><option>claim</option><option>release</option><option>block</option><option>recheck</option><option>waive</option></select></label>
+        <label class="field"><span>Reason <span class="hint">for block, recheck, waive</span></span><input name="reason"></label>
+        {{if .Owner}}<label class="field"><span>Take over from <span class="hint">type {{.Owner}} to confirm</span></span><input name="expected_owner"></label>{{end}}
+        <div class="field form-submit"><button>Update</button></div>
+      </form>
+    </div>
+    {{end}}
+  </article>
+  {{else}}<p class="muted">No matching checks.</p>{{end}}
+  {{if .Next}}<p><a href="{{.Next}}">Next page</a></p>{{end}}
+
+  {{if .History}}<section class="card"><h2>Result history</h2>
+    {{range .History}}<div class="hist"><p class="small"><strong>{{.Actor}}</strong> recorded <strong>{{.Result}}</strong> <span class="muted">{{stamp .RecordedAt}}{{with .OccurredAt}}, happened {{stamp .}}{{end}}, via {{.Source}}{{if not .AcceptedCurrent}}, superseded{{end}}</span></p>{{with .Detail}}<pre>{{.}}</pre>{{end}}</div>{{end}}
+  </section>{{end}}
+
+  <details class="card more"><summary>Credential scope, retirement, and cracking</summary>
+    {{range .Profiles}}
+    <form class="hist" method="post" action="/checks"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="action" value="profile"><input type="hidden" name="cred_id" value="{{.CredID}}">
+      <p><strong>{{.Identity}}</strong> <span class="muted small">{{.SecretType}}</span></p>
+      {{if eq .SecretType "hash_uncracked"}}<p class="small muted">Uncracked hash: no login checks are generated. Link the cracked password below with "Cracked from".</p>{{end}}
+      {{if eq .SecretType "other"}}<p class="small muted">Set the credential type before checks can be generated.</p>{{end}}
+      <div class="form-grid">
+        {{$kind := .ScopeKind}}<label class="field">Scope <select name="scope_kind">{{range list "unknown" "domain" "local" "target" "all"}}<option {{if eq . $kind}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+        <label class="field"><span>Scope value <span class="hint">domain, IP, or target</span></span><input name="scope_value" value="{{.ScopeValue}}"></label>
+        <label class="field"><span>Only protocols <span class="hint">blank = all compatible</span></span><input name="protocols" value="{{range .Protocols}}{{.}} {{end}}"></label>
+        <label class="field">Revision of cred # <input type="number" name="revision_of" min="1" value="{{with .RevisionOf}}{{.}}{{end}}"></label>
+        <label class="field">Cracked from cred # <input type="number" name="cracked_from" min="1" value="{{with .CrackedFrom}}{{.}}{{end}}"></label>
+        <label class="field small"><span><input type="checkbox" name="retired" {{if .Retired}}checked{{end}}> Retired</span></label>
+        <div class="field form-submit"><button>Save</button></div>
+      </div>
+    </form>
+    {{else}}<p class="muted small">No credentials yet.</p>{{end}}
+  </details>
+
+  {{if .Observations}}<details class="card more"><summary>Imported results that need an endpoint</summary>
+    <p class="small muted">Results imported without a single matching port. Pick the endpoint they belong to; this does not claim a new check.</p>
+    {{range .Observations}}
+    <form class="hist" method="post" action="/checks"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="action" value="associate"><input type="hidden" name="observation_id" value="{{index . "id"}}">
+      <p class="small">Credential {{index . "cred_id"}} on {{index . "host"}} / {{index . "protocol"}}: {{index . "result"}} <span class="muted">{{index . "reason"}}</span></p>
+      <div class="form-grid">
+        <label class="field">Endpoint # <input name="endpoint_id" type="number" min="1" required></label>
+        <label class="field">Reason <input name="reason" required></label>
+        <div class="field form-submit"><button>Link</button></div>
+      </div>
+    </form>
+    {{end}}
+  </details>{{end}}
+</main>{{template "foot" .}}{{end}}

@@ -1,0 +1,42 @@
+{{define "access"}}{{template "head" .}}{{template "nav" .}}
+<main id="content">
+  <header class="page-heading"><div><h1>Access</h1>
+  <p class="muted">How access was gained, from the ledger. Edges marked derived come from scans with a vantage, the credential check queue, and tunnels. Solid lines are active; dashed lines have ended. Nothing here is inferred.</p></div></header>
+  <form class="card filter-bar" method="get" action="/access">
+    <label>Node <input name="node" value="{{.Q.Node}}" placeholder="10.0.0.5, cred:7, vantage:kali" size="22"></label>
+    <label>Credential <input name="cred" type="number" min="1" value="{{if .Q.Cred}}{{.Q.Cred}}{{end}}" size="5"></label>
+    <label>Kind <select name="kind"><option value="">All</option>{{range (list "reach" "auth" "shell" "cred_found" "cred_used" "tunnel")}}<option {{if eq . $.Q.Kind}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+    <label>Level <select name="level"><option value="">Any</option>{{range (list "user" "valid" "admin" "system" "domain_admin")}}<option {{if eq . $.Q.Level}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+    <label>Operator <input name="actor" value="{{.Q.Actor}}" size="8"></label>
+    <label>As of (UTC) <input name="as_of" value="{{.Q.AsOfText}}" placeholder="2026-10-24T14:30" size="20"></label>
+    <label><input type="checkbox" name="known" value="1" {{if .Q.Known}}checked{{end}}> What we knew then</label>
+    <label><input type="checkbox" name="derived" value="0" {{if not .Q.Derived}}checked{{end}}> Hide derived</label>
+    {{if gt .Q.Depth 1}}<input type="hidden" name="depth" value="{{.Q.Depth}}">{{end}}
+    <button class="primary">Show</button> <a class="small" href="/access">Reset</a>
+  </form>
+  {{if .Err}}<p class="err">{{.Err}}</p>{{else}}
+  <p class="actions">{{if .Prev}}<a class="small" href="{{.Prev}}">← Previous change</a>{{end}} {{if .Next}}<a class="small" href="{{.Next}}">{{if .Q.AsOf}}Next change →{{else}}Play from the first change →{{end}}</a>{{end}} {{if .Q.AsOf}}<a class="small" href="{{.NowLink}}">Now</a>{{end}}
+  {{if .Expand}}<a class="small" href="{{.Expand}}">Expand one more hop</a>{{end}}
+  · Export: <a class="small" href="/access/export.svg?{{.Export}}">SVG</a> <a class="small" href="/access/export.json?{{.Export}}">JSON</a> <a class="small" href="/access/export.md?{{.Export}}">Markdown</a></p>
+  {{if .Graph.Truncated}}<p class="err">Showing the first {{len .Graph.Edges}} edges; {{.Graph.Truncated}} more. Pick a node to narrow the view.</p>{{end}}
+  {{if .Edges}}<div class="card graph-wrap">{{.SVG}}</div>{{end}}
+  <div class="card"><table>
+    <caption class="muted small">Access edges, oldest first</caption>
+    <tr><th>When (UTC)</th><th>Edge</th><th>Kind</th><th>From</th><th>To</th><th>By</th><th>Via</th><th>State</th></tr>
+    {{range .Edges}}<tr>
+      <td class="small">{{with .OccurredAt}}{{stamp .}}{{else}}<span class="muted">unknown</span>{{end}}</td>
+      <td class="mono small">{{.Key}}{{if .Derived}} <span class="muted">derived</span>{{end}}</td>
+      <td>{{.Kind}}{{with .Level}} · {{.}}{{end}}</td>
+      <td>{{if .Src}}<a href="/access?node={{.Src}}">{{.SrcLabel}}</a>{{else}}<span class="muted">unknown source</span>{{end}}</td>
+      <td><a href="/access?node={{.Dst}}">{{.DstLabel}}</a></td>
+      <td class="small">{{.Actor}}{{with .FindingID}} · <a href="/findings/{{.}}">finding {{.}}</a>{{end}}{{with .EvidenceID}} · <a href="/evidence/{{.}}">evidence {{.}}</a>{{end}}</td>
+      <td class="small">{{with .ViaEdgeID}}edge:{{.}}{{end}}</td>
+      <td class="small">{{if .SupersededBy}}corrected by edge:{{.SupersededBy}}{{else}}{{.State}}{{with .EndedAt}} {{stamp .}}{{end}}{{with .EndReason}}: {{.}}{{end}}{{end}}{{with .Note}}<div class="muted">{{.}}</div>{{end}}</td>
+    </tr>{{else}}<tr><td colspan="8" class="muted">No access recorded yet. Use <code>cork access add</code> or <code>cork owned</code>.</td></tr>{{end}}
+  </table></div>
+  {{end}}
+  <details class="card"><summary>Vantages ({{len .Vantages}}) and tunnels ({{len .Tunnels}})</summary>
+    <table><tr><th>Vantage</th><th>Type</th><th>Host</th><th>Note</th></tr>{{range .Vantages}}<tr><td class="mono">{{.Name}}</td><td>{{.Kind}}</td><td>{{.HostIP}}</td><td>{{.Note}}</td></tr>{{end}}</table>
+    <table><tr><th>Tunnel</th><th>State</th><th>Owner</th><th>Through</th><th>Listener</th><th>Reaches</th><th>Vantage</th></tr>{{range .Tunnels}}<tr><td>{{.ID}}</td><td>{{.State}}</td><td>{{.Owner}}</td><td class="mono">{{.ViaHostIP}}</td><td class="mono">{{.Listener}}</td><td class="mono">{{.Destination}}</td><td class="mono">{{.Vantage}}</td></tr>{{end}}</table>
+  </details>
+</main>{{template "foot" .}}{{end}}
